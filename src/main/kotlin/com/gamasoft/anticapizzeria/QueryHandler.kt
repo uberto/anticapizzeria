@@ -2,6 +2,7 @@ package com.gamasoft.anticapizzeria
 
 import kotlinx.coroutines.experimental.channels.SendChannel
 import kotlinx.coroutines.experimental.channels.actor
+import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.runBlocking
 
 class QueryHandler {
@@ -9,7 +10,10 @@ class QueryHandler {
     val sendChannel: SendChannel<Query>
     init{
         sendChannel = actor{
-
+            for (q in channel) {
+                println("Processing $q")
+                delay(10)
+            }
         }
     }
 
