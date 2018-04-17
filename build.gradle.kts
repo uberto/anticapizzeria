@@ -28,6 +28,9 @@ repositories {
 
 dependencies {
     compile(kotlin("stdlib-jdk8", kotlin_version))
+
+    compile("org.jetbrains.kotlinx","kotlinx-coroutines-core", "0.22.2")
+
 }
 
 tasks.withType<KotlinCompile> {
