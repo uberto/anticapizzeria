@@ -6,8 +6,8 @@ sealed class Application{
 
     object application: Application() {
 
-        private val commandHandler = CommandHandler()
-        private val queryHandler = QueryHandler()
+        val commandHandler = CommandHandler()
+        val queryHandler = QueryHandler()
 
 //    fun start() {
 //
@@ -21,7 +21,7 @@ sealed class Application{
             return commandHandler.handle(c)
         }
 
-        fun process(q: Query): String {
+        inline fun <reified T> process(q: Query<T>): List<T> {
             return queryHandler.handle(q)
         }
 
