@@ -20,7 +20,7 @@ class CommandHandler {
 
             for (c in channel) {
                 println("Processing $c")
-                delay(1000)
+                delay(100)
             }
 
             println("done!")

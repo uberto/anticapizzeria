@@ -19,18 +19,17 @@ fun main(args: Array<String>) {
     }
 
     val queries = listOf(
-            OrderQuery.GetAllOpenOrders,
-            OrderQuery.GetOrderStatus(pn))
+            GetAllOpenOrders ,
+            GetOrderStatus(pn),
+            GetAllActiveItems)
 
 
     for (q in queries) {
-        Application.application.process(q).forEach {
-            println("Processed $q with result $it")
-        }
+        val r = Application.application.process(q)
+
+        println("Processed $q with result $r")
+
     }
 
-    Application.application.process(ItemQuery.GetAllActiveItems).forEach {
-        println("Processed GetAllActiveItems with result $it")
-    }
 
 }

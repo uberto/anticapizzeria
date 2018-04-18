@@ -21,7 +21,7 @@ sealed class Application{
             return commandHandler.handle(c)
         }
 
-        inline fun <reified T> process(q: Query<T>): List<T> {
+        fun process(q: Query<out Entity>): List<Entity> {
             return queryHandler.handle(q)
         }
 
