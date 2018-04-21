@@ -10,6 +10,7 @@ data class Confirm(val phoneNum: String): Command()
 data class Cancel(val phoneNum: String): Command()
 data class Deliver(val phoneNum: String): Command()
 data class Pay(val phoneNum: String, val price: Double): Command()
+data class NoDelivery(val phoneNum: String, val reason: String): Command()
 
 data class CreateItem(val itemId: String, val desc: String, val price: Double): Command()
 data class DisableItem(val itemId: String): Command()
@@ -18,3 +19,4 @@ data class EnableItem(val itemId: String): Command()
 
 object CancelAllOpenOrders: Command()
 data class AddBonusItemToAllOpenOrders(val itemId: String): Command()
+data class IncreasePriceToAllEnabledItems(val percent: Double): Command()

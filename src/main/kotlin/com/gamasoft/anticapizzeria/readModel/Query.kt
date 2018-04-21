@@ -4,7 +4,7 @@ sealed class Query<T: Entity>
 
 sealed class OrderQuery: Query<Order>()
 object GetAllOpenOrders: OrderQuery()
-data class GetOrderStatus(val phoneNum: String): OrderQuery()
+data class GetOrder(val phoneNum: String): OrderQuery()
 object GetBiggestOrder: OrderQuery()
 
 

@@ -13,17 +13,24 @@ class Application {
     val eventStore = EventStore()
 
     val commandHandler = CommandHandler(eventStore)
-    val queryHandler = QueryHandler(eventStore)
+    val queryHandler = QueryHandler()
 
-//    fun start() {
-//
-//    }
-//
-//    fun stop() {
-//
-//    }
+    private var started: Boolean = false
+
+    fun start() {
+        eventStore.loadAllEvents()
+        eventStore.addListener(queryHandler.eventChannel)
+        started = true
+    }
+
+    fun stop() {
+        eventStore.saveAllEvents()
+
+    }
 
     fun process(c: Command): String {
+        if (!started)
+            throw NotStartedException()
         return commandHandler.handle(c)
     }
 

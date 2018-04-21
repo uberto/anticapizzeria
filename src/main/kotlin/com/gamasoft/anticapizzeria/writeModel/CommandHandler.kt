@@ -1,10 +1,7 @@
 package com.gamasoft.anticapizzeria.writeModel
 
-import com.gamasoft.anticapizzeria.eventStore.Event
-import com.gamasoft.anticapizzeria.eventStore.EventStore
-import com.gamasoft.anticapizzeria.eventStore.ItemCreated
-import com.gamasoft.anticapizzeria.eventStore.OrderStarted
 import com.gamasoft.anticapizzeria.application.createActor
+import com.gamasoft.anticapizzeria.eventStore.*
 import kotlinx.coroutines.experimental.runBlocking
 
 
@@ -16,14 +13,26 @@ class CommandHandler(val eventStore: EventStore) {
 
     suspend private fun processCommand(c: Command) {
         println("Processing $c")
-        val events = when(c){
+        val event = when(c){
             is CreateItem -> listOf(ItemCreated(c.itemId, c.desc, c.price))
             is StartOrder -> listOf(OrderStarted(c.phoneNum))
-            else -> { listOf<Event>()
-            }
+            is AddItem -> listOf(ItemAdded(c.phoneNum, c.item, c.quantity))
+            is RemoveItem -> listOf(ItemRemoved(c.phoneNum, c.item))
+            is AddAddress -> listOf(AddressAdded(c.phoneNum, c.address))
+            is Confirm -> listOf(Confirmed(c.phoneNum))
+            is Cancel -> listOf(Cancelled(c.phoneNum))
+            is Deliver -> listOf(DeliverStarted(c.phoneNum))
+            is Pay -> listOf(Paid(c.phoneNum, c.price))
+            is DisableItem -> listOf(ItemDisabled(c.itemId))
+            is EditItem -> listOf(ItemEdited(c.itemId, c.desc, c.price))
+            is EnableItem -> listOf(ItemEnabled(c.itemId))
+            is AddBonusItemToAllOpenOrders -> listOf()
+            is IncreasePriceToAllEnabledItems -> listOf()
+            CancelAllOpenOrders -> listOf()
+            is NoDelivery -> listOf(Refused(c.phoneNum, c.reason))
         }
 
-        eventStore.sendChannel.send(events)
+        eventStore.sendChannel.send(event)
     }
 
 
