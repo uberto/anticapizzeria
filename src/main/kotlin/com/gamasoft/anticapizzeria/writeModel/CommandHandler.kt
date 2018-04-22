@@ -38,12 +38,13 @@ class CommandHandler(val eventStore: EventStore) {
 
     fun handle(cmd: Command):String {
 
-        //validate cmd
+        //TODO validate cmd
 
         runBlocking {
             sendChannel.send(cmd)
 
         }
+
         return "Ok"
     }
 

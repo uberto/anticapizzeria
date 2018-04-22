@@ -85,7 +85,7 @@ class QueryHandler {
         println("Processing $q")
 
         return when(q){
-            GetAllOpenOrders -> orders.values.filter { it.status in listOf(OrderStatus.new, OrderStatus.ready) }
+            GetAllOpenOrders -> orders.values.filter { it.status in setOf(OrderStatus.new, OrderStatus.ready) }
             is GetOrder -> orders.get(q.phoneNum)?.run { listOf(this)}?: listOf()
             GetBiggestOrder -> orders.maxBy { it.value.total }?.value?.run { listOf(this) }?:listOf()
             is GetItem -> items.get(q.itemId)?.run{ listOf(this)}?: listOf()
