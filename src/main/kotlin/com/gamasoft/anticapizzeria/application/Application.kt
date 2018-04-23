@@ -1,6 +1,7 @@
 package com.gamasoft.anticapizzeria.application
 
-import com.gamasoft.anticapizzeria.eventStore.EventStore
+import com.gamasoft.anticapizzeria.eventStore.Event
+import com.gamasoft.anticapizzeria.eventStore.EventStoreInMemory
 import com.gamasoft.anticapizzeria.readModel.Entity
 import com.gamasoft.anticapizzeria.readModel.Query
 import com.gamasoft.anticapizzeria.readModel.QueryHandler
@@ -10,7 +11,7 @@ import com.gamasoft.anticapizzeria.writeModel.CommandHandler
 
 class Application {
 
-    val eventStore = EventStore()
+    val eventStore = EventStoreInMemory()
 
     val commandHandler = CommandHandler(eventStore)
     val queryHandler = QueryHandler()
@@ -18,9 +19,8 @@ class Application {
     private var started: Boolean = false
 
     fun start() {
-        eventStore.loadAllEvents()
         eventStore.addListener(queryHandler.eventChannel)
-        started = true
+        eventStore.loadAllEvents()
     }
 
     fun stop() {
@@ -29,13 +29,21 @@ class Application {
     }
 
     fun process(c: Command): String {
-        if (!started)
-            throw NotStartedException()
         return commandHandler.handle(c)
     }
 
     fun process(q: Query<out Entity>): List<Entity> {
         return queryHandler.handle(q)
+    }
+
+
+    fun processAll(commands: List<Command>):String {
+        for (c in commands) {
+            val r = process(c)
+            if (r != "Ok")
+                return r;
+        }
+        return "Ok"
     }
 
 }

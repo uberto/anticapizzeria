@@ -18,60 +18,65 @@ class QueryHandler {
 
     private fun processEvent(e: Event): Entity? {
         return when (e){
-            is OrderStarted -> orders.put(e.phoneNum, Order(OrderStatus.new, e.phoneNum, 0.0, null, mutableListOf()))
-            is ItemAdded  -> {
-                val item = items.get(e.itemId)
-                val order = orders.get(e.phoneNum)
-                order?.apply { item?.apply { details.add(OrderDetail(item.name, e.quantity)); total += item.price * e.quantity } }
+            is ItemEvent -> when (e) {
+
+                is ItemCreated ->  {
+                    items.put(e.itemId, Item(e.desc, e.price, true))
+                }
+                is ItemDisabled -> {
+                    val item = items.get(e.itemId)
+                    item?.apply { enabled = false }
+                }
+                is ItemEdited ->{
+                    val item = items.get(e.itemId)
+                    item?.apply { name = e.desc; price = e.price }
+                }
+                is ItemEnabled -> {
+                    val item = items.get(e.itemId)
+                    item?.apply { enabled = true }
+                }
+
             }
-            is ItemRemoved -> {
-                val item = items.get(e.itemId)
-                val order = orders.get(e.phoneNum)
-                order?.apply { item?.apply {
-                    val toRemove = details.filter { it.itemName == item.name }
-                    val newTotal = toRemove.fold(total) {a, od -> a + od.qty * item.price}
-                    details.removeAll (toRemove)
-                    total -= newTotal
-                } }
-            }
-            is AddressAdded -> {
+            is OrderEvent -> when (e){
+                is OrderStarted -> orders.put(e.phoneNum, Order(OrderStatus.new, e.phoneNum, 0.0, null, mutableListOf()))
+                is ItemAdded  -> {
+                    val item = items.get(e.itemId)
+                    val order = orders.get(e.phoneNum)
+                    order?.apply { item?.apply { details.add(OrderDetail(item.name, e.quantity)); total += item.price * e.quantity } }
+                }
+                is ItemRemoved -> {
+                    val item = items.get(e.itemId)
+                    val order = orders.get(e.phoneNum)
+                    order?.apply { item?.apply {
+                        val toRemove = details.filter { it.itemName == item.name }
+                        val newTotal = toRemove.fold(total) {a, od -> a + od.qty * item.price}
+                        details.removeAll (toRemove)
+                        total -= newTotal
+                    } }
+                }
+                is AddressAdded -> {
                     val order = orders.get(e.phoneNum)
                     order?.apply { address = e.address; status = OrderStatus.ready} }
-            is Confirmed  -> {
-                val order = orders.get(e.phoneNum)
-                order?.apply { status = OrderStatus.confirmed}
-            }
-            is Cancelled  ->  {
-                val order = orders.get(e.phoneNum)
-                order?.apply { status = OrderStatus.cancelled}
-            }
-            is DeliverStarted ->  {
-                val order = orders.get(e.phoneNum)
-                order?.apply { status = OrderStatus.leftForDelivery}
-            }
-            is Paid -> {
-                val order = orders.get(e.phoneNum)
-                order?.apply { status = OrderStatus.paid; total = e.price}
-            }
-            is Refused -> {
-                val order = orders.get(e.phoneNum)
-                order?.apply { status = OrderStatus.refused; total = 0.0}
-            }
-
-            is ItemCreated ->  {
-                items.put(e.itemId, Item(e.desc, e.price, true))
-            }
-            is ItemDisabled -> {
-                val item = items.get(e.itemId)
-                item?.apply { enabled = false }
-            }
-            is ItemEdited ->{
-                val item = items.get(e.itemId)
-                item?.apply { name = e.desc; price = e.price }
-            }
-            is ItemEnabled -> {
-                val item = items.get(e.itemId)
-                item?.apply { enabled = true }
+                is Confirmed  -> {
+                    val order = orders.get(e.phoneNum)
+                    order?.apply { status = OrderStatus.confirmed}
+                }
+                is Cancelled  ->  {
+                    val order = orders.get(e.phoneNum)
+                    order?.apply { status = OrderStatus.cancelled}
+                }
+                is DeliverStarted ->  {
+                    val order = orders.get(e.phoneNum)
+                    order?.apply { status = OrderStatus.leftForDelivery}
+                }
+                is Paid -> {
+                    val order = orders.get(e.phoneNum)
+                    order?.apply { status = OrderStatus.paid; total = e.price}
+                }
+                is Refused -> {
+                    val order = orders.get(e.phoneNum)
+                    order?.apply { status = OrderStatus.refused; total = 0.0}
+                }
             }
 
         }

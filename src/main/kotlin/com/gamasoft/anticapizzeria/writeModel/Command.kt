@@ -16,7 +16,3 @@ data class CreateItem(val itemId: String, val desc: String, val price: Double): 
 data class DisableItem(val itemId: String): Command()
 data class EditItem(val itemId: String, val desc: String, val price: Double): Command()
 data class EnableItem(val itemId: String): Command()
-
-object CancelAllOpenOrders: Command()
-data class AddBonusItemToAllOpenOrders(val itemId: String): Command()
-data class IncreasePriceToAllEnabledItems(val percent: Double): Command()

@@ -58,18 +58,13 @@ internal class ApplicationTest {
     @Test
     fun deliverTwoMargherita() {
         val pn = "123"
-        val commands = listOf(
+        application.processAll(listOf(
                 CreateItem("MAR", "pizza margherita", 6.0 ),
                 StartOrder(pn),
                 AddItem(pn, "MAR", 2),
                 AddAddress(pn, "Oxford Circus, 4"),
                 Confirm(pn),
-                Deliver(pn))
-
-        for (c in commands) {
-            val r = application.process(c)
-            assert(r).isEqualTo("Ok")
-        }
+                Deliver(pn)))
 
         Thread.sleep(10)
 
@@ -85,7 +80,7 @@ internal class ApplicationTest {
 
         val pn1 = "123456"
         val pn2 = "123457"
-        val commands = listOf(
+        application.processAll( listOf(
                 CreateItem("MAR", "pizza margherita", 6.0 ),
                 CreateItem("CAP", "pizza capricciosa", 7.5 ),
                 CreateItem("COK", "soda can", 2.0 ),
@@ -96,11 +91,7 @@ internal class ApplicationTest {
                 StartOrder(pn2),
                 AddItem(pn2, "COK", 3),
                 AddItem(pn2, "CAP", 3))
-
-        for (c in commands) {
-            val r = application.process(c)
-            println("Processed $c with result $r")
-        }
+        )
 
 
         Thread.sleep(10)
@@ -120,24 +111,25 @@ internal class ApplicationTest {
         assert(order2.total ).isEqualTo(28.5)
         assert(order2.status ).isEqualTo(OrderStatus.new)
 
+        val bo = application.process(GetBiggestOrder)
+        assert(o2).hasSize(1)
+
+        assert(bo[0] as Order).isEqualTo(order2)
+
+
     }
 
     @Test
     fun changingPriceAfterConfirm(){
         val pn = "123"
-        val commands = listOf(
+        application.processAll( listOf(
                 CreateItem("CAL", "calzone", 6.0 ),
                 StartOrder(pn),
                 AddItem(pn, "CAL", 3),
                 AddAddress(pn, "Oxford Circus, 6"),
                 Confirm(pn),
                 EditItem("CAL", "calzone", 7.0 )
-                )
-
-        for (c in commands) {
-            val r = application.process(c)
-            assert(r).isEqualTo("Ok")
-        }
+                ))
 
         Thread.sleep(10)
 
@@ -153,15 +145,23 @@ internal class ApplicationTest {
 
     @Test
     fun cancelOrder(){
-        //ss
+        val pn = "567"
+        application.processAll(listOf(
+                CreateItem("MAR", "pizza margherita", 6.0 ),
+                StartOrder(pn),
+                AddItem(pn, "MAR", 2),
+                AddAddress(pn, "Oxford Circus, 4"),
+                Cancel(pn)))
+        val oo = application.process(GetAllOpenOrders)
+        assert(oo).hasSize(0)
+        val os = application.process(GetOrder(pn))
+        assert(os).hasSize(1)
+        assert((os[0] as Order).status ).isEqualTo(OrderStatus.cancelled)
     }
 
-    @Test
-    fun cancelAllOpenOrders(){
-        //sss
-    }
 
 
     private fun smallOrder(pn: String) = Order(OrderStatus.leftForDelivery, pn, 12.0, "Oxford Circus, 4", mutableListOf(OrderDetail("pizza margherita", 2)))
 
 }
+
