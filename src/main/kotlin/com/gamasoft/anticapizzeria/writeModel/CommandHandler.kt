@@ -2,7 +2,6 @@ package com.gamasoft.anticapizzeria.writeModel
 
 import arrow.data.Validated
 import arrow.data.ValidatedNel
-import arrow.data.invalidNel
 import com.gamasoft.anticapizzeria.application.createActor
 import com.gamasoft.anticapizzeria.eventStore.*
 import kotlinx.coroutines.experimental.CompletableDeferred
@@ -47,7 +46,7 @@ class CommandHandler(val eventStore: EventStore) {
             is Confirm -> execute(c)
             is Cancel -> execute(c)
             is Pay -> execute(c)
-            is NoDelivery -> execute(c)
+            is Refuse -> execute(c)
             is CreateItem -> execute(c)
             is EditItem -> execute(c)
             is DisableItem -> execute(c)
@@ -192,7 +191,7 @@ private fun execute(c: Pay): EsScope = {
     }
 }
 
-private fun execute(c: NoDelivery): EsScope = {
+private fun execute(c: Refuse): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
         is ConfirmedOrder -> Validated.validNel(Refused(c.phoneNum, c.reason))

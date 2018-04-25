@@ -86,7 +86,7 @@ internal class ApplicationTest {
     }
 
     @Test
-    fun twoOrders() {
+    fun twoOrdersAtSameTime() {
 
         val pn1 = "123456"
         val pn2 = "123457"
@@ -125,6 +125,26 @@ internal class ApplicationTest {
 
             assert(bo[0] as Order).isEqualTo(order2)
 
+        }
+    }
+
+    @Test
+    fun orderRefused() {
+        val pn = "123"
+        application.apply {
+            val errors = listOf(
+                    CreateItem("MAR", "pizza margherita", 6.0 ),
+                    StartOrder(pn),
+                    AddItem(pn, "MAR", 2),
+                    AddAddress(pn, "Oxford Circus, 4"),
+                    Confirm(pn),
+                    Refuse(pn, "Pizza arrived cold")).processAllInSync()
+
+            assert(errors).isEmpty()
+
+            val os = GetOrder(pn).process()
+            assert(os).hasSize(1)
+            assert((os[0] as Order).status ).isEqualTo(OrderStatus.refused)
         }
     }
 
@@ -176,7 +196,6 @@ internal class ApplicationTest {
 
     @Test
     fun disableAndReenableItems(){
-        val pn = "890"
         val itemId = "MAR"
         val itemId2 = "CAPRI"
         application.apply {
