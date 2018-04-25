@@ -2,13 +2,11 @@ package com.gamasoft.anticapizzeria.writeModel
 
 import arrow.data.Validated
 import arrow.data.ValidatedNel
-import arrow.data.ap
-import arrow.syntax.function.bind
+import arrow.data.invalidNel
 import com.gamasoft.anticapizzeria.application.createActor
 import com.gamasoft.anticapizzeria.eventStore.*
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.launch
 import kotlinx.coroutines.experimental.runBlocking
 
 
@@ -27,8 +25,21 @@ class CommandHandler(val eventStore: EventStore) {
 
     private fun executeCommand(msg: CommandMsg) {
 
-        val c = msg.command
-        val cmdResult = when(c){
+        val res = executeMulti(msg.command)(eventStore)
+
+        if (res is Validated.Valid)
+            runBlocking { //use launch to store events in parallel slightly out of order
+                eventStore.sendChannel.send(res.a)
+                delay(1) //simulate network delay
+            }
+        msg.response.complete(res)
+    }
+
+    private fun executeMulti(c: Command): EsScope {
+
+        println("Processing ${c}")
+
+        val cmdResult = when (c) {
             is StartOrder -> execute(c)
             is AddItem -> execute(c)
             is RemoveItem -> execute(c)
@@ -42,16 +53,7 @@ class CommandHandler(val eventStore: EventStore) {
             is DisableItem -> execute(c)
             is EnableItem -> execute(c)
         }
-
-        println("Processing $c")
-        val res = cmdResult(eventStore)
-
-        if (res is Validated.Valid)
-            runBlocking { //use launch to store events in parallel slightly out of order
-                eventStore.sendChannel.send(res.a)
-                delay(1) //simulate network delay
-            }
-        msg.response.complete(res)
+        return cmdResult
     }
 
 
@@ -121,24 +123,30 @@ private fun execute(c: StartOrder): EsScope = {
 
 
 private fun execute(c: AddItem): EsScope = {
+    val item = getEvents<ItemEvent>(c.itemId).fold()
+
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
-    when (order){
-        is NewOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.item, c.quantity))
-        is ReadyOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.item, c.quantity))
-    else ->
-        Validated.invalidNel("Order cannot be modified! ${order}")
+    when (item) {
+        is DisabledItem -> Validated.invalidNel("Cannot add disabled item! {$item}")
+        else ->
+            when (order){
+                is NewOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))
+                is ReadyOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))
+            else ->
+                Validated.invalidNel("Order cannot be modified! ${order}")
+            }
     }
 }
 
 private fun execute(c: RemoveItem): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
-        is NewOrder -> if (order.details.any { it.itemId ==c.item})
-                        Validated.validNel(ItemRemoved(c.phoneNum, c.item))
+        is NewOrder -> if (order.details.any { it.itemId ==c.itemId})
+                        Validated.validNel(ItemRemoved(c.phoneNum, c.itemId))
                         else
                             Validated.invalidNel("Item not present in the order! ${order}")
-        is ReadyOrder -> if (order.details.any { it.itemId ==c.item})
-                            Validated.validNel(ItemRemoved(c.phoneNum, c.item))
+        is ReadyOrder -> if (order.details.any { it.itemId ==c.itemId})
+                            Validated.validNel(ItemRemoved(c.phoneNum, c.itemId))
                         else
                             Validated.invalidNel("Item not present in the order! ${order}")
     else ->

@@ -186,13 +186,32 @@ internal class ApplicationTest {
                     Confirm(pn),
                     Cancel(pn)).processAllInSync()
 
-
             assert(errors).hasSize(1)
             assert(errors[0].head).isEqualTo("Order cannot be cancelled now! ConfirmedOrder(phoneNum=567, address=Oxford Circus, 4, details=[OrderDetail(itemId=MAR, qty=2)])")
-          }
+
+        }
+    }
+
+    @Test
+    fun cannotAddDisabledItem() {
+        val pn = "678"
+        application.apply {
+            val errors = listOf(
+                    CreateItem("MAR", "pizza margherita", 6.0 ),
+                    StartOrder(pn),
+                    DisableItem("MAR"),
+                    AddItem(pn, "MAR", 2)
+            ).processAllInSync()
+
+
+            assert(errors).hasSize(1)
+            assert(errors[0].head).isEqualTo("Cannot add disabled item! {DisabledItem(itemId=MAR, name=pizza margherita, price=6.0)}")
+        }
     }
 
     private fun smallOrder(pn: String) = Order(OrderStatus.paid, pn, 12.0, "Oxford Circus, 4", mutableListOf(OrderDetail("pizza margherita", 2)))
+
+
 
 }
 
