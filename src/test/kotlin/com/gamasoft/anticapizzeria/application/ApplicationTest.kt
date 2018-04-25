@@ -195,12 +195,13 @@ internal class ApplicationTest {
     @Test
     fun cannotAddDisabledItem() {
         val pn = "678"
+        val itemId = "MAR"
         application.apply {
             val errors = listOf(
-                    CreateItem("MAR", "pizza margherita", 6.0 ),
+                    CreateItem(itemId, "pizza margherita", 6.0 ),
                     StartOrder(pn),
-                    DisableItem("MAR"),
-                    AddItem(pn, "MAR", 2)
+                    DisableItem(itemId),
+                    AddItem(pn, itemId, 2)
             ).processAllInSync()
 
 
