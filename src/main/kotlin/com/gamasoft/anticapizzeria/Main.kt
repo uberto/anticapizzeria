@@ -13,30 +13,20 @@ fun main(args: Array<String>) {
     println("Antica Pizzeria! Best Pizza outside Naples")
 
 
-    val application = Application()
+    val application = Application().apply {
 
-    val pn = "0755 123456"
-    val commands = listOf(
+        val pn = "0755 123456"
+        listOf(
             StartOrder(pn),
             AddItem(pn, "pizza margherita", 2),
-            Confirm(pn))
+            Confirm(pn)).processAllInSync()
 
-    for (c in commands) {
-        val r = application.process(c)
-        println("Processed $c with result $r")
-    }
-
-    val queries = listOf(
+        listOf(
             GetAllOpenOrders,
             GetOrder(pn),
-            GetAllActiveItems)
-
-
-    for (q in queries) {
-        val r = application.process(q)
-
-        println("Processed $q with result $r")
-
+            GetAllActiveItems).forEach {
+            println("Processed Query $it with result ${it.process()}")
+        }
     }
 
 

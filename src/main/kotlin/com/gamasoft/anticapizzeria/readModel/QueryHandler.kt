@@ -38,7 +38,7 @@ class QueryHandler {
 
             }
             is OrderEvent -> when (e){
-                is OrderStarted -> orders.put(e.phoneNum, Order(OrderStatus.new, e.phoneNum, 0.0, null, mutableListOf()))
+                is Started -> orders.put(e.phoneNum, Order(OrderStatus.new, e.phoneNum, 0.0, null, mutableListOf()))
                 is ItemAdded  -> {
                     val item = items.get(e.itemId)
                     val order = orders.get(e.phoneNum)
@@ -65,13 +65,9 @@ class QueryHandler {
                     val order = orders.get(e.phoneNum)
                     order?.apply { status = OrderStatus.cancelled}
                 }
-                is DeliverStarted ->  {
-                    val order = orders.get(e.phoneNum)
-                    order?.apply { status = OrderStatus.leftForDelivery}
-                }
                 is Paid -> {
                     val order = orders.get(e.phoneNum)
-                    order?.apply { status = OrderStatus.paid; total = e.price}
+                    order?.apply { status = OrderStatus.paid; total = e.totalPaid}
                 }
                 is Refused -> {
                     val order = orders.get(e.phoneNum)
@@ -82,18 +78,14 @@ class QueryHandler {
         }
     }
 
-
-
-
-
     private fun processQuery(q: Query<out Entity>): List<Entity> {
         println("Processing $q")
 
         return when(q){
             GetAllOpenOrders -> orders.values.filter { it.status in setOf(OrderStatus.new, OrderStatus.ready) }
-            is GetOrder -> orders.get(q.phoneNum)?.run { listOf(this)}?: listOf()
-            GetBiggestOrder -> orders.maxBy { it.value.total }?.value?.run { listOf(this) }?:listOf()
-            is GetItem -> items.get(q.itemId)?.run{ listOf(this)}?: listOf()
+            is GetOrder -> orders.get(q.phoneNum)?.run { listOf(this)}?: emptyList()
+            GetBiggestOrder -> orders.maxBy { it.value.total }?.value?.run { listOf(this) }?:emptyList()
+            is GetItem -> items.get(q.itemId)?.run{ listOf(this)}?: emptyList()
             GetAllActiveItems -> items.values.filter { it.enabled }
         }
     }

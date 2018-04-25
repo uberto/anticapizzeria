@@ -1,13 +1,16 @@
 package com.gamasoft.anticapizzeria.application
 
+import arrow.data.Nel
 import assertk.assert
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import com.gamasoft.anticapizzeria.eventStore.AddressAdded
 import com.gamasoft.anticapizzeria.readModel.*
+import com.gamasoft.anticapizzeria.readModel.Item
+import com.gamasoft.anticapizzeria.readModel.Order
+import com.gamasoft.anticapizzeria.readModel.OrderDetail
 import com.gamasoft.anticapizzeria.writeModel.*
-import org.junit.jupiter.api.BeforeAll
+import kotlinx.coroutines.experimental.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -23,56 +26,63 @@ internal class ApplicationTest {
     @Test
     fun newOrder() {
         val pn = "101"
-        val r = application.process(StartOrder(pn))
-        assert(r).isEqualTo("Ok")
+        application.apply{
+            val r = StartOrder(pn).process()
 
-        Thread.sleep(100)
+            Thread.sleep(10) //async so we have to wait
 
-        val os = application.process(GetOrder(pn))
+            val os = GetOrder(pn).process()
 
-        assert(os).hasSize(1)
-        assert((os[0] as Order) ).isEqualTo(Order(OrderStatus.new, pn, 0.0, null, mutableListOf()))
+            assert(os).hasSize(1)
+            assert((os[0] as Order) ).isEqualTo(Order(OrderStatus.new, pn, 0.0, null, mutableListOf()))
 
 
-        val eos = application.process(GetOrder("***"))
-        assert(eos).isEmpty()
+            val eos = GetOrder("***").process()
+            assert(eos).isEmpty()
+        }
     }
 
     @Test
     fun newItem() {
+
         val id = "CAPRI"
-        val r = application.process(CreateItem(id, "pizza capricciosa", 7.5))
-        assert(r).isEqualTo("Ok")
 
-        Thread.sleep(100)
+        application.apply {
+            val r = CreateItem(id, "pizza capricciosa", 7.5).process()
 
-        val os = application.process(GetItem(id))
+            runBlocking {
+                val errors =r.await()
+                assert(errors.isValid)
+            } //wait
+            val os = GetItem(id).process()
 
-        assert(os).hasSize(1)
-        assert((os[0] as Item) ).isEqualTo(Item("pizza capricciosa", 7.5, true))
+            assert(os).hasSize(1)
+            assert((os[0] as Item)).isEqualTo(Item("pizza capricciosa", 7.5, true))
 
-        val eos = application.process(GetItem("***"))
-        assert(eos).isEmpty()
+            val eos = GetItem("***").process()
+            assert(eos).isEmpty()
+        }
     }
 
     @Test
     fun deliverTwoMargherita() {
         val pn = "123"
-        application.processAll(listOf(
+        application.apply {
+            val errors = listOf(
                 CreateItem("MAR", "pizza margherita", 6.0 ),
                 StartOrder(pn),
                 AddItem(pn, "MAR", 2),
                 AddAddress(pn, "Oxford Circus, 4"),
                 Confirm(pn),
-                Deliver(pn)))
+                Pay(pn, 12.0)).processAllInSync()
 
-        Thread.sleep(10)
+            assert(errors).isEmpty()
 
-        val os = application.process(GetOrder(pn))
-        assert(os).hasSize(1)
-        assert((os[0] as Order) ).isEqualTo(smallOrder(pn))
+            val os = GetOrder(pn).process()
+            assert(os).hasSize(1)
+            assert((os[0] as Order) ).isEqualTo(smallOrder(pn))
 
-
+        }
     }
 
     @Test
@@ -80,88 +90,109 @@ internal class ApplicationTest {
 
         val pn1 = "123456"
         val pn2 = "123457"
-        application.processAll( listOf(
-                CreateItem("MAR", "pizza margherita", 6.0 ),
-                CreateItem("CAP", "pizza capricciosa", 7.5 ),
-                CreateItem("COK", "soda can", 2.0 ),
+        application.apply {
+            val errors = listOf(
+                    CreateItem("MAR", "pizza margherita", 6.0),
+                    CreateItem("CAP", "pizza capricciosa", 7.5),
+                    CreateItem("COK", "soda can", 2.0),
 
-                StartOrder(pn1),
-                AddItem(pn1, "MAR", 2),
-                AddAddress(pn1, "12, Long St."),
-                StartOrder(pn2),
-                AddItem(pn2, "COK", 3),
-                AddItem(pn2, "CAP", 3))
-        )
+                    StartOrder(pn1),
+                    AddItem(pn1, "MAR", 2),
+                    AddAddress(pn1, "12, Long St."),
+                    StartOrder(pn2),
+                    AddItem(pn2, "COK", 3),
+                    AddItem(pn2, "CAP", 3)
+            ).processAllInSync()
 
+            assert(errors).isEmpty()
+            val oo = GetAllOpenOrders.process()
+            assert(oo).hasSize(2)
+            val ai = GetAllActiveItems.process()
+            assert(ai).hasSize(3)
+            val o1 = GetOrder(pn1).process()
+            assert(o1).hasSize(1)
+            val order1 = o1[0] as Order
+            assert(order1.total).isEqualTo(12.0)
+            assert(order1.status).isEqualTo(OrderStatus.ready)
+            val o2 = GetOrder(pn2).process()
+            assert(o2).hasSize(1)
+            val order2 = o2[0] as Order
+            assert(order2.total).isEqualTo(28.5)
+            assert(order2.status).isEqualTo(OrderStatus.new)
 
-        Thread.sleep(10)
+            val bo = GetBiggestOrder.process()
+            assert(o2).hasSize(1)
 
-        val oo = application.process(GetAllOpenOrders)
-        assert(oo).hasSize(2)
-        val ai = application.process(GetAllActiveItems)
-        assert(ai).hasSize(3)
-        val o1 = application.process(GetOrder(pn1))
-        assert(o1).hasSize(1)
-        val order1 = o1[0] as Order
-        assert(order1.total ).isEqualTo(12.0)
-        assert(order1.status ).isEqualTo(OrderStatus.ready)
-        val o2 = application.process(GetOrder(pn2))
-        assert(o2).hasSize(1)
-        val order2 = o2[0] as Order
-        assert(order2.total ).isEqualTo(28.5)
-        assert(order2.status ).isEqualTo(OrderStatus.new)
+            assert(bo[0] as Order).isEqualTo(order2)
 
-        val bo = application.process(GetBiggestOrder)
-        assert(o2).hasSize(1)
-
-        assert(bo[0] as Order).isEqualTo(order2)
-
-
+        }
     }
 
     @Test
     fun changingPriceAfterConfirm(){
         val pn = "123"
-        application.processAll( listOf(
+        application.apply {
+            val errors = listOf(
                 CreateItem("CAL", "calzone", 6.0 ),
                 StartOrder(pn),
                 AddItem(pn, "CAL", 3),
                 AddAddress(pn, "Oxford Circus, 6"),
                 Confirm(pn),
                 EditItem("CAL", "calzone", 7.0 )
-                ))
+                ).processAllInSync()
 
-        Thread.sleep(10)
+            assert(errors).isEmpty()
 
-        val os = application.process(GetOrder(pn))
-        assert(os).hasSize(1)
-        assert((os[0] as Order).total ).isEqualTo(18.0)
+            val os = GetOrder(pn).process()
+            assert(os).hasSize(1)
+            assert((os[0] as Order).total ).isEqualTo(18.0)
 
-        val il = application.process(GetItem("CAL"))
-        assert(il).hasSize(1)
-        assert((il[0] as Item) ).isEqualTo(Item("calzone", 7.0, true))
-
+            val il = GetItem("CAL").process()
+            assert(il).hasSize(1)
+            assert((il[0] as Item) ).isEqualTo(Item("calzone", 7.0, true))
+        }
     }
 
     @Test
     fun cancelOrder(){
         val pn = "567"
-        application.processAll(listOf(
+        application.apply {
+            val errors = listOf(
                 CreateItem("MAR", "pizza margherita", 6.0 ),
                 StartOrder(pn),
                 AddItem(pn, "MAR", 2),
                 AddAddress(pn, "Oxford Circus, 4"),
-                Cancel(pn)))
-        val oo = application.process(GetAllOpenOrders)
-        assert(oo).hasSize(0)
-        val os = application.process(GetOrder(pn))
-        assert(os).hasSize(1)
-        assert((os[0] as Order).status ).isEqualTo(OrderStatus.cancelled)
+                Cancel(pn)).processAllInSync()
+
+
+            assert(errors).isEmpty()
+            val oo = GetAllOpenOrders.process()
+            assert(oo).hasSize(0)
+            val os = GetOrder(pn).process()
+            assert(os).hasSize(1)
+            assert((os[0] as Order).status ).isEqualTo(OrderStatus.cancelled)
+        }
     }
 
+    @Test
+    fun cannotCancelAfterConfirm() {
+        val pn = "567"
+        application.apply {
+            val errors = listOf(
+                    CreateItem("MAR", "pizza margherita", 6.0 ),
+                    StartOrder(pn),
+                    AddItem(pn, "MAR", 2),
+                    AddAddress(pn, "Oxford Circus, 4"),
+                    Confirm(pn),
+                    Cancel(pn)).processAllInSync()
 
 
-    private fun smallOrder(pn: String) = Order(OrderStatus.leftForDelivery, pn, 12.0, "Oxford Circus, 4", mutableListOf(OrderDetail("pizza margherita", 2)))
+            assert(errors).hasSize(1)
+            assert(errors[0].head).isEqualTo("Order cannot be cancelled now! ConfirmedOrder(phoneNum=567, address=Oxford Circus, 4, details=[OrderDetail(itemId=MAR, qty=2)])")
+          }
+    }
+
+    private fun smallOrder(pn: String) = Order(OrderStatus.paid, pn, 12.0, "Oxford Circus, 4", mutableListOf(OrderDetail("pizza margherita", 2)))
 
 }
 

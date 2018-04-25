@@ -1,12 +1,17 @@
 package com.gamasoft.anticapizzeria.application
 
+import arrow.data.Nel
+import arrow.data.Validated
 import com.gamasoft.anticapizzeria.eventStore.Event
 import com.gamasoft.anticapizzeria.eventStore.EventStoreInMemory
 import com.gamasoft.anticapizzeria.readModel.Entity
 import com.gamasoft.anticapizzeria.readModel.Query
 import com.gamasoft.anticapizzeria.readModel.QueryHandler
+import com.gamasoft.anticapizzeria.writeModel.CmdResult
 import com.gamasoft.anticapizzeria.writeModel.Command
 import com.gamasoft.anticapizzeria.writeModel.CommandHandler
+import kotlinx.coroutines.experimental.CompletableDeferred
+import kotlinx.coroutines.experimental.runBlocking
 
 
 class Application {
@@ -15,8 +20,6 @@ class Application {
 
     val commandHandler = CommandHandler(eventStore)
     val queryHandler = QueryHandler()
-
-    private var started: Boolean = false
 
     fun start() {
         eventStore.addListener(queryHandler.eventChannel)
@@ -28,22 +31,25 @@ class Application {
 
     }
 
-    fun process(c: Command): String {
-        return commandHandler.handle(c)
+    fun Command.process(): CompletableDeferred<CmdResult> {
+        return commandHandler.handle(this)
     }
 
-    fun process(q: Query<out Entity>): List<Entity> {
-        return queryHandler.handle(q)
+    fun Query<out Entity>.process(): List<Entity> {
+        return queryHandler.handle(this)
     }
 
 
-    fun processAll(commands: List<Command>):String {
-        for (c in commands) {
-            val r = process(c)
-            if (r != "Ok")
-                return r;
+    fun List<Command>.processAllInSync(): List<Nel<String>> {
+
+        val completed = runBlocking {
+             this@processAllInSync.map { it.process() }
+                    .map { it.await() }
         }
-        return "Ok"
+
+
+        return completed.filter { it.isInvalid }
+            .map { (it as Validated.Invalid).e }
     }
 
 }

@@ -2,24 +2,34 @@ package com.gamasoft.anticapizzeria.eventStore
 
 import com.gamasoft.anticapizzeria.application.createActor
 import kotlinx.coroutines.experimental.channels.SendChannel
+import kotlinx.coroutines.experimental.launch
 
-class EventStoreInMemory : EventStore {
+class EventStoreInMemory : EventStore() {
+    override fun getItemEvents(pk: String) = itemEventCache.getOrDefault(pk, emptyList())
 
-    private val eventCache = mutableMapOf<String, List<Event>>()
+    override fun getOrderEvents(pk: String) = orderEventCache.getOrDefault(pk, emptyList())
+
+    private val orderEventCache = mutableMapOf<String, List<OrderEvent>>()
+    private val itemEventCache = mutableMapOf<String, List<ItemEvent>>()
     private val listeners: MutableList<SendChannel<Event>> = mutableListOf()
 
     override val sendChannel = createActor<Event> { processEvents(it) }
 
-    suspend private fun processEvents(event: Event) {
+    private fun processEvents(event: Event) {
 
-        eventCache.compute(event.pk){k, el -> (el?: listOf()).plus(event)}
+        when (event) {
+            is ItemEvent -> itemEventCache.compute(event.pk) { _, el -> (el ?: emptyList()).plus(event) }
+            is OrderEvent -> orderEventCache.compute(event.pk) { _, el -> (el ?: emptyList()).plus(event) }
+        }
 
         for (listener in listeners) {
-            listener.send(event)
+            launch { listener.send(event) }
         }
+
+        println("Processed Event $event")
     }
 
-    override fun addListener(listener: SendChannel<Event>){
+    override fun addListener(listener: SendChannel<Event>) {
         listeners.add(listener)
     }
 
@@ -32,6 +42,6 @@ class EventStoreInMemory : EventStore {
         //not implemented
     }
 
-    override fun getEvents(pk: String): List<Event> = eventCache.getOrDefault(pk, listOf())
-
 }
+
+
