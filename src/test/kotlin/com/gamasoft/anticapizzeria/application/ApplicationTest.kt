@@ -234,6 +234,23 @@ internal class ApplicationTest {
     }
 
     @Test
+    fun cannotAddNonExistingItem() {
+        val pn = "678"
+        val itemId = "MAR"
+        application.apply {
+            val errors = listOf(
+                    StartOrder(pn),
+                    AddItem(pn, itemId, 2)
+            ).processAllInSync()
+
+
+            assert(errors).hasSize(1)
+            assert(errors[0].head).isEqualTo("Cannot add non existing item! {MAR}")
+        }
+    }
+
+
+    @Test
     fun cannotAddDisabledItem() {
         val pn = "678"
         val itemId = "MAR"

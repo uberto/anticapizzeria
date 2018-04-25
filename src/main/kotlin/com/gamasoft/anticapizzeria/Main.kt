@@ -12,20 +12,23 @@ fun main(args: Array<String>) {
 
     println("Antica Pizzeria! Best Pizza outside Naples")
 
+    val pn = "0755 123456"
+    Application().apply {
+        start()
 
-    val application = Application().apply {
-
-        val pn = "0755 123456"
-        listOf(
+        val errors = listOf(
             StartOrder(pn),
             AddItem(pn, "pizza margherita", 2),
             Confirm(pn)).processAllInSync()
+
+        println("Errors: $errors")
+        //TODO fix me
 
         listOf(
             GetAllOpenOrders,
             GetOrder(pn),
             GetAllActiveItems).forEach {
-            println("Processed Query $it with result ${it.process()}")
+                println("Processed Query $it with result ${it.process()}")
         }
     }
 

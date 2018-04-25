@@ -126,7 +126,8 @@ private fun execute(c: AddItem): EsScope = {
 
     when (item) {
         is DisabledItem -> Validated.invalidNel("Cannot add disabled item! {$item}")
-        else -> {
+        is emptyItem -> Validated.invalidNel("Cannot add non existing item! {${c.itemId}}")
+        is EnabledItem -> {
             val order = getEvents<OrderEvent>(c.phoneNum).fold()
             when (order) {
                 is NewOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))

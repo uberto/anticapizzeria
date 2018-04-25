@@ -95,7 +95,6 @@ class QueryHandler {
 
     fun handle(q: Query<out Entity>):List<Entity> {
 
-
         val msg = QueryMsg(q, CompletableDeferred())
 
         runBlocking {
