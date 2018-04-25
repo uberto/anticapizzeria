@@ -175,6 +175,28 @@ internal class ApplicationTest {
     }
 
     @Test
+    fun disableAndReenableItems(){
+        val pn = "890"
+        val itemId = "MAR"
+        val itemId2 = "CAPRI"
+        application.apply {
+            val errors = listOf(
+                CreateItem(itemId, "pizza margherita", 6.0 ),
+                CreateItem(itemId2, "pizza caprese", 8.0 ),
+                DisableItem(itemId),
+                DisableItem(itemId2),
+                EnableItem(itemId)).processAllInSync()
+
+            assert(errors).isEmpty()
+
+            val ai = GetAllActiveItems.process()
+            assert(ai).hasSize(1)
+        }
+    }
+
+
+
+    @Test
     fun cannotCancelAfterConfirm() {
         val pn = "567"
         application.apply {

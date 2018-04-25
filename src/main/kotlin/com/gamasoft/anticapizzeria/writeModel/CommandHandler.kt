@@ -30,7 +30,7 @@ class CommandHandler(val eventStore: EventStore) {
         if (res is Validated.Valid)
             runBlocking { //use launch to store events in parallel slightly out of order
                 eventStore.sendChannel.send(res.a)
-                delay(1) //simulate network delay
+                delay(10) //simulate network delay
             }
         msg.response.complete(res)
     }
@@ -125,16 +125,17 @@ private fun execute(c: StartOrder): EsScope = {
 private fun execute(c: AddItem): EsScope = {
     val item = getEvents<ItemEvent>(c.itemId).fold()
 
-    val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (item) {
         is DisabledItem -> Validated.invalidNel("Cannot add disabled item! {$item}")
-        else ->
-            when (order){
+        else -> {
+            val order = getEvents<OrderEvent>(c.phoneNum).fold()
+            when (order) {
                 is NewOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))
                 is ReadyOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))
-            else ->
-                Validated.invalidNel("Order cannot be modified! ${order}")
+                else ->
+                    Validated.invalidNel("Order cannot be modified! ${order}")
             }
+        }
     }
 }
 
