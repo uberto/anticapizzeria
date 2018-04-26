@@ -3,12 +3,12 @@ package com.gamasoft.anticapizzeria.readModel
 
 enum class OrderStatus {new, ready, confirmed, paid, cancelled, refused}
 
-data class OrderDetail(val itemName: String, val qty: Int): Entity()
+data class OrderDetail(val itemName: String, val qty: Int): ReadEntity()
 
 
 
-sealed class Entity
+sealed class ReadEntity
 
-data class Order(var status: OrderStatus, val phoneNum: String, var total: Double, var address: String?, val details: MutableList<OrderDetail>): Entity()
+data class ReadOrder(var status: OrderStatus, val phoneNum: String, var total: Double, var address: String?, val details: MutableList<OrderDetail>): ReadEntity()
 
-data class Item(var name: String, var price: Double, var enabled: Boolean): Entity()
+data class ReadItem(var name: String, var price: Double, var enabled: Boolean): ReadEntity()

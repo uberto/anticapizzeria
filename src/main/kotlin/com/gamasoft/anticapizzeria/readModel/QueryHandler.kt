@@ -5,7 +5,7 @@ import com.gamasoft.anticapizzeria.eventStore.*
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.runBlocking
 
-data class QueryMsg(val query: Query<out Entity>, val response: CompletableDeferred<List<Entity>>) // a request with reply
+data class QueryMsg(val query: Query<out ReadEntity>, val response: CompletableDeferred<List<ReadEntity>>) // a request with reply
 
 class QueryHandler {
 
@@ -13,15 +13,15 @@ class QueryHandler {
 
     val eventChannel = createActor { e: Event -> processEvent(e) }
 
-    private val items = mutableMapOf<String, Item>()
-    private val orders = mutableMapOf<String, Order>()
+    private val items = mutableMapOf<String, ReadItem>()
+    private val orders = mutableMapOf<String, ReadOrder>()
 
-    private fun processEvent(e: Event): Entity? {
+    private fun processEvent(e: Event): ReadEntity? {
         return when (e){
             is ItemEvent -> when (e) {
 
                 is ItemCreated ->  {
-                    items.put(e.itemId, Item(e.desc, e.price, true))
+                    items.put(e.itemId, ReadItem(e.desc, e.price, true))
                 }
                 is ItemDisabled -> {
                     val item = items.get(e.itemId)
@@ -38,7 +38,7 @@ class QueryHandler {
 
             }
             is OrderEvent -> when (e){
-                is Started -> orders.put(e.phoneNum, Order(OrderStatus.new, e.phoneNum, 0.0, null, mutableListOf()))
+                is Started -> orders.put(e.phoneNum, ReadOrder(OrderStatus.new, e.phoneNum, 0.0, null, mutableListOf()))
                 is ItemAdded  -> {
                     val item = items.get(e.itemId)
                     val order = orders.get(e.phoneNum)
@@ -78,7 +78,7 @@ class QueryHandler {
         }
     }
 
-    private fun processQuery(q: Query<out Entity>): List<Entity> {
+    private fun processQuery(q: Query<out ReadEntity>): List<ReadEntity> {
         println("Processing $q")
 
         return when(q){
@@ -93,7 +93,7 @@ class QueryHandler {
 
 
 
-    fun handle(q: Query<out Entity>):List<Entity> {
+    fun handle(q: Query<out ReadEntity>):List<ReadEntity> {
 
         val msg = QueryMsg(q, CompletableDeferred())
 

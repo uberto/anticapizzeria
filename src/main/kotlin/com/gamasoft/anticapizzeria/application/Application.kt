@@ -2,9 +2,8 @@ package com.gamasoft.anticapizzeria.application
 
 import arrow.data.Nel
 import arrow.data.Validated
-import com.gamasoft.anticapizzeria.eventStore.Event
 import com.gamasoft.anticapizzeria.eventStore.EventStoreInMemory
-import com.gamasoft.anticapizzeria.readModel.Entity
+import com.gamasoft.anticapizzeria.readModel.ReadEntity
 import com.gamasoft.anticapizzeria.readModel.Query
 import com.gamasoft.anticapizzeria.readModel.QueryHandler
 import com.gamasoft.anticapizzeria.writeModel.CmdResult
@@ -35,7 +34,7 @@ class Application {
         return commandHandler.handle(this)
     }
 
-    fun Query<out Entity>.process(): List<Entity> {
+    fun Query<out ReadEntity>.process(): List<ReadEntity> {
         return queryHandler.handle(this)
     }
 

@@ -82,7 +82,7 @@ private fun execute(c: CreateItem): EsScope = {
     if (item == emptyItem)
         Validated.validNel(ItemCreated(c.itemId, c.desc, c.price))
     else
-        Validated.invalidNel("Item already existing! ${item}")
+        Validated.invalidNel("ReadItem already existing! ${item}")
 }
 
 private fun execute(c: EditItem): EsScope = {
@@ -90,7 +90,7 @@ private fun execute(c: EditItem): EsScope = {
     if (item is EnabledItem)
         Validated.validNel(ItemEdited(c.itemId, c.desc, c.price))
     else
-        Validated.invalidNel("Item not enabled! ${item}")
+        Validated.invalidNel("ReadItem not enabled! ${item}")
 }
 
 private fun execute(c: DisableItem): EsScope = {
@@ -98,7 +98,7 @@ private fun execute(c: DisableItem): EsScope = {
     if (item is EnabledItem)
         Validated.validNel(ItemDisabled(c.itemId))
     else
-        Validated.invalidNel("Item already disabled! ${item}")
+        Validated.invalidNel("ReadItem already disabled! ${item}")
 }
 
 private fun execute(c: EnableItem): EsScope = {
@@ -106,7 +106,7 @@ private fun execute(c: EnableItem): EsScope = {
     if (item is DisabledItem)
         Validated.validNel(ItemEnabled(c.itemId))
     else
-        Validated.invalidNel("Item already enabled! ${item}")
+        Validated.invalidNel("ReadItem already enabled! ${item}")
 }
 
 
@@ -117,7 +117,7 @@ private fun execute(c: StartOrder): EsScope = {
     if (order == emptyOrder)
         Validated.validNel(Started(c.phoneNum))
     else
-        Validated.invalidNel("Order already existing! ${order}")
+        Validated.invalidNel("ReadOrder already existing! ${order}")
 }
 
 
@@ -133,7 +133,7 @@ private fun execute(c: AddItem): EsScope = {
                 is NewOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))
                 is ReadyOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))
                 else ->
-                    Validated.invalidNel("Order cannot be modified! ${order}")
+                    Validated.invalidNel("ReadOrder cannot be modified! ${order}")
             }
         }
     }
@@ -145,13 +145,13 @@ private fun execute(c: RemoveItem): EsScope = {
         is NewOrder -> if (order.details.any { it.itemId ==c.itemId})
                         Validated.validNel(ItemRemoved(c.phoneNum, c.itemId))
                         else
-                            Validated.invalidNel("Item not present in the order! ${order}")
+                            Validated.invalidNel("ReadItem not present in the order! ${order}")
         is ReadyOrder -> if (order.details.any { it.itemId ==c.itemId})
                             Validated.validNel(ItemRemoved(c.phoneNum, c.itemId))
                         else
-                            Validated.invalidNel("Item not present in the order! ${order}")
+                            Validated.invalidNel("ReadItem not present in the order! ${order}")
     else ->
-        Validated.invalidNel("Order cannot be modified! ${order}")
+        Validated.invalidNel("ReadOrder cannot be modified! ${order}")
     }
 }
 
@@ -169,7 +169,7 @@ private fun execute(c: Confirm): EsScope = {
     when (order){
         is ReadyOrder -> Validated.validNel(Confirmed(c.phoneNum))
     else ->
-        Validated.invalidNel("Order is not ready for confirmation! ${order}")
+        Validated.invalidNel("ReadOrder is not ready for confirmation! ${order}")
     }
 }
 
@@ -179,7 +179,7 @@ private fun execute(c: Cancel): EsScope = {
         is ReadyOrder -> Validated.validNel(Cancelled(c.phoneNum))
         is NewOrder -> Validated.validNel(Cancelled(c.phoneNum))
     else ->
-        Validated.invalidNel("Order cannot be cancelled now! ${order}")
+        Validated.invalidNel("ReadOrder cannot be cancelled now! ${order}")
     }
 }
 
@@ -188,7 +188,7 @@ private fun execute(c: Pay): EsScope = {
     when (order){
         is ConfirmedOrder -> Validated.validNel(Paid(c.phoneNum, c.price))
     else ->
-        Validated.invalidNel("Order cannot be paid now! ${order}")
+        Validated.invalidNel("ReadOrder cannot be paid now! ${order}")
     }
 }
 
@@ -197,7 +197,7 @@ private fun execute(c: Refuse): EsScope = {
     when (order){
         is ConfirmedOrder -> Validated.validNel(Refused(c.phoneNum, c.reason))
     else ->
-        Validated.invalidNel("Order cannot be refused now! ${order}")
+        Validated.invalidNel("ReadOrder cannot be refused now! ${order}")
     }
 }
 

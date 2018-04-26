@@ -1,13 +1,12 @@
 package com.gamasoft.anticapizzeria.application
 
-import arrow.data.Nel
 import assertk.assert
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import com.gamasoft.anticapizzeria.readModel.*
-import com.gamasoft.anticapizzeria.readModel.Item
-import com.gamasoft.anticapizzeria.readModel.Order
+import com.gamasoft.anticapizzeria.readModel.ReadItem
+import com.gamasoft.anticapizzeria.readModel.ReadOrder
 import com.gamasoft.anticapizzeria.readModel.OrderDetail
 import com.gamasoft.anticapizzeria.writeModel.*
 import kotlinx.coroutines.experimental.runBlocking
@@ -34,7 +33,7 @@ internal class ApplicationTest {
             val os = GetOrder(pn).process()
 
             assert(os).hasSize(1)
-            assert((os[0] as Order) ).isEqualTo(Order(OrderStatus.new, pn, 0.0, null, mutableListOf()))
+            assert((os[0] as ReadOrder) ).isEqualTo(ReadOrder(OrderStatus.new, pn, 0.0, null, mutableListOf()))
 
 
             val eos = GetOrder("***").process()
@@ -57,7 +56,7 @@ internal class ApplicationTest {
             val os = GetItem(id).process()
 
             assert(os).hasSize(1)
-            assert((os[0] as Item)).isEqualTo(Item("pizza capricciosa", 7.5, true))
+            assert((os[0] as ReadItem)).isEqualTo(ReadItem("pizza capricciosa", 7.5, true))
 
             val eos = GetItem("***").process()
             assert(eos).isEmpty()
@@ -80,7 +79,7 @@ internal class ApplicationTest {
 
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
-            assert((os[0] as Order) ).isEqualTo(smallOrder(pn))
+            assert((os[0] as ReadOrder) ).isEqualTo(smallOrder(pn))
 
         }
     }
@@ -111,19 +110,19 @@ internal class ApplicationTest {
             assert(ai).hasSize(3)
             val o1 = GetOrder(pn1).process()
             assert(o1).hasSize(1)
-            val order1 = o1[0] as Order
+            val order1 = o1[0] as ReadOrder
             assert(order1.total).isEqualTo(12.0)
             assert(order1.status).isEqualTo(OrderStatus.ready)
             val o2 = GetOrder(pn2).process()
             assert(o2).hasSize(1)
-            val order2 = o2[0] as Order
+            val order2 = o2[0] as ReadOrder
             assert(order2.total).isEqualTo(28.5)
             assert(order2.status).isEqualTo(OrderStatus.new)
 
             val bo = GetBiggestOrder.process()
             assert(o2).hasSize(1)
 
-            assert(bo[0] as Order).isEqualTo(order2)
+            assert(bo[0] as ReadOrder).isEqualTo(order2)
 
         }
     }
@@ -144,7 +143,7 @@ internal class ApplicationTest {
 
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
-            assert((os[0] as Order).status ).isEqualTo(OrderStatus.refused)
+            assert((os[0] as ReadOrder).status ).isEqualTo(OrderStatus.refused)
         }
     }
 
@@ -165,11 +164,11 @@ internal class ApplicationTest {
 
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
-            assert((os[0] as Order).total ).isEqualTo(18.0)
+            assert((os[0] as ReadOrder).total ).isEqualTo(18.0)
 
             val il = GetItem("CAL").process()
             assert(il).hasSize(1)
-            assert((il[0] as Item) ).isEqualTo(Item("calzone", 7.0, true))
+            assert((il[0] as ReadItem) ).isEqualTo(ReadItem("calzone", 7.0, true))
         }
     }
 
@@ -190,7 +189,7 @@ internal class ApplicationTest {
             assert(oo).hasSize(0)
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
-            assert((os[0] as Order).status ).isEqualTo(OrderStatus.cancelled)
+            assert((os[0] as ReadOrder).status ).isEqualTo(OrderStatus.cancelled)
         }
     }
 
@@ -228,7 +227,7 @@ internal class ApplicationTest {
                     Cancel(pn)).processAllInSync()
 
             assert(errors).hasSize(1)
-            assert(errors[0].head).isEqualTo("Order cannot be cancelled now! ConfirmedOrder(phoneNum=567, address=Oxford Circus, 4, details=[OrderDetail(itemId=MAR, qty=2)])")
+            assert(errors[0].head).isEqualTo("ReadOrder cannot be cancelled now! ConfirmedOrder(phoneNum=567, address=Oxford Circus, 4, details=[OrderDetail(itemId=MAR, qty=2)])")
 
         }
     }
@@ -268,7 +267,7 @@ internal class ApplicationTest {
         }
     }
 
-    private fun smallOrder(pn: String) = Order(OrderStatus.paid, pn, 12.0, "Oxford Circus, 4", mutableListOf(OrderDetail("pizza margherita", 2)))
+    private fun smallOrder(pn: String) = ReadOrder(OrderStatus.paid, pn, 12.0, "Oxford Circus, 4", mutableListOf(OrderDetail("pizza margherita", 2)))
 
 
 
