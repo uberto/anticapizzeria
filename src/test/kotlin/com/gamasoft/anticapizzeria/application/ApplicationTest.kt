@@ -52,9 +52,9 @@ internal class ApplicationTest {
             runBlocking {
                 val errors =r.await()
                 assert(errors.isValid)
-            } //wait
-            val os = GetItem(id).process()
+            }
 
+            val os = GetItem(id).process()
             assert(os).hasSize(1)
             assert((os[0] as ReadItem)).isEqualTo(ReadItem("pizza capricciosa", 7.5, true))
 
@@ -200,7 +200,7 @@ internal class ApplicationTest {
         application.apply {
             val errors = listOf(
                 CreateItem(itemId, "pizza margherita", 6.0 ),
-                CreateItem(itemId2, "pizza caprese", 8.0 ),
+                CreateItem(itemId2, "pizza capricciosa", 8.0 ),
                 DisableItem(itemId),
                 DisableItem(itemId2),
                 EnableItem(itemId)).processAllInSync()
@@ -212,6 +212,30 @@ internal class ApplicationTest {
         }
     }
 
+
+    @Test
+    fun removeItems(){
+        val pn = "123"
+        val itemId = "MAR"
+        val itemId2 = "CAPRI"
+        application.apply {
+            val errors = listOf(
+                    CreateItem(itemId, "pizza margherita", 6.0 ),
+                    CreateItem(itemId2, "pizza capricciosa", 8.0 ),
+                    StartOrder(pn),
+                    AddItem(pn, itemId, 2),
+                    AddItem(pn, itemId2, 1),
+                    AddItem(pn, itemId2, 3),
+                    RemoveItem(pn, itemId2)).processAllInSync()
+
+            assert(errors).isEmpty()
+
+            val ai = GetOrder(pn).process()
+            assert(ai).hasSize(1)
+            assert((ai[0] as ReadOrder).details).hasSize(1)
+            assert((ai[0] as ReadOrder).details[0]).isEqualTo(OrderDetail("pizza margherita", 2))
+        }
+    }
 
 
     @Test
