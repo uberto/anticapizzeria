@@ -50,24 +50,15 @@ data class ConfirmedOrder(val phoneNum: String, val address: String, val details
 }
 
 data class PaidOrder(val phoneNum: String, val totalPaid: Double): Order(phoneNum) {
-    override fun compose(e: OrderEvent) = when (e) {
-        is Started -> NewOrder(e.phoneNum, emptyList())
-        else -> this
-    }
+    override fun compose(e: OrderEvent) = this
 }
 
 data class CancelledOrder(val phoneNum: String): Order(phoneNum) {
-    override fun compose(e: OrderEvent) = when (e) {
-        is Started -> NewOrder(e.phoneNum, emptyList())
-        else -> this
-    }
+    override fun compose(e: OrderEvent) = this
 }
 
 data class RefusedOrder(val phoneNum: String, val reason:String): Order(phoneNum) {
-    override fun compose(e: OrderEvent) = when (e) {
-        is Started -> NewOrder(e.phoneNum, emptyList())
-        else -> this
-    }
+    override fun compose(e: OrderEvent) = this
 }
 
 
