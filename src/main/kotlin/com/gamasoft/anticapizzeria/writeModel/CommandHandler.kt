@@ -1,23 +1,22 @@
 package com.gamasoft.anticapizzeria.writeModel
 
-import arrow.data.Validated
-import arrow.data.ValidatedNel
 import com.gamasoft.anticapizzeria.application.createActor
 import com.gamasoft.anticapizzeria.eventStore.*
+import com.gamasoft.anticapizzeria.functional.Invalid
+import com.gamasoft.anticapizzeria.functional.Valid
+import com.gamasoft.anticapizzeria.functional.Validated
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.runBlocking
 
 
-typealias ErrorMsg = String
-typealias CmdResult = ValidatedNel<ErrorMsg, Event>
+typealias CmdResult = Validated<DomainError, Event>
 typealias EsScope = EventStore.() -> CmdResult
 
 data class CommandMsg(val command: Command, val response: CompletableDeferred<CmdResult>) // a command with a result
 
 
 class CommandHandler(val eventStore: EventStore) {
-
 
     //if we need we can have multiple instances
     val sendChannel = createActor<CommandMsg> { executeCommand(it) }
@@ -26,12 +25,13 @@ class CommandHandler(val eventStore: EventStore) {
 
         val res = executeMulti(msg.command)(eventStore)
 
-        if (res is Validated.Valid)
-            runBlocking { //use launch to store events in parallel slightly out of order
-                eventStore.sendChannel.send(res.a)
-                delay(10) //simulate network delay
+        runBlocking {
+            //we want to reply after sending the event to the store
+            if (res is Valid) {
+                eventStore.sendChannel.send(res.value)
             }
-        msg.response.complete(res)
+            msg.response.complete(res)
+        }
     }
 
     private fun executeMulti(c: Command): EsScope {
@@ -80,33 +80,33 @@ private fun List<OrderEvent>.fold(): Order {
 private fun execute(c: CreateItem): EsScope = {
     val item = getEvents<ItemEvent>(c.itemId).fold()
     if (item == emptyItem)
-        Validated.validNel(ItemCreated(c.itemId, c.desc, c.price))
+        Valid(ItemCreated(c.itemId, c.desc, c.price))
     else
-        Validated.invalidNel("ReadItem already existing! ${item}")
+        Invalid(ItemError("Item already existing! ${item}", item))
 }
 
 private fun execute(c: EditItem): EsScope = {
     val item = getEvents<ItemEvent>(c.itemId).fold()
     if (item is EnabledItem)
-        Validated.validNel(ItemEdited(c.itemId, c.desc, c.price))
+        Valid(ItemEdited(c.itemId, c.desc, c.price))
     else
-        Validated.invalidNel("ReadItem not enabled! ${item}")
+        Invalid(ItemError("Item not enabled! ${item}", item))
 }
 
 private fun execute(c: DisableItem): EsScope = {
     val item = getEvents<ItemEvent>(c.itemId).fold()
     if (item is EnabledItem)
-        Validated.validNel(ItemDisabled(c.itemId))
+        Valid(ItemDisabled(c.itemId))
     else
-        Validated.invalidNel("ReadItem already disabled! ${item}")
+        Invalid(ItemError("Item already disabled! ${item}", item))
 }
 
 private fun execute(c: EnableItem): EsScope = {
     val item = getEvents<ItemEvent>(c.itemId).fold()
     if (item is DisabledItem)
-        Validated.validNel(ItemEnabled(c.itemId))
+        Valid(ItemEnabled(c.itemId))
     else
-        Validated.invalidNel("ReadItem already enabled! ${item}")
+        Invalid(ItemError("Item already enabled! ${item}", item))
 }
 
 
@@ -115,9 +115,9 @@ private fun execute(c: EnableItem): EsScope = {
 private fun execute(c: StartOrder): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     if (order == emptyOrder)
-        Validated.validNel(Started(c.phoneNum))
+        Valid(Started(c.phoneNum))
     else
-        Validated.invalidNel("ReadOrder already existing! ${order}")
+        Invalid(OrderError("Order already existing! ${order}", order))
 }
 
 
@@ -125,15 +125,15 @@ private fun execute(c: AddItem): EsScope = {
     val item = getEvents<ItemEvent>(c.itemId).fold()
 
     when (item) {
-        is DisabledItem -> Validated.invalidNel("Cannot add disabled item! {$item}")
-        is emptyItem -> Validated.invalidNel("Cannot add non existing item! {${c.itemId}}")
+        is DisabledItem -> Invalid(ItemError("Cannot add disabled item! $item", item))
+        is emptyItem -> Invalid(ItemError("Cannot add non existing item! ${c.itemId}", item))
         is EnabledItem -> {
             val order = getEvents<OrderEvent>(c.phoneNum).fold()
             when (order) {
-                is NewOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))
-                is ReadyOrder -> Validated.validNel(ItemAdded(c.phoneNum, c.itemId, c.quantity))
+                is NewOrder -> Valid(ItemAdded(c.phoneNum, c.itemId, c.quantity))
+                is ReadyOrder -> Valid(ItemAdded(c.phoneNum, c.itemId, c.quantity))
                 else ->
-                    Validated.invalidNel("ReadOrder cannot be modified! ${order}")
+                    Invalid(OrderError("Order cannot be modified! ${order}", order))
             }
         }
     }
@@ -143,61 +143,61 @@ private fun execute(c: RemoveItem): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
         is NewOrder -> if (order.details.any { it.itemId ==c.itemId})
-                        Validated.validNel(ItemRemoved(c.phoneNum, c.itemId))
+                        Valid(ItemRemoved(c.phoneNum, c.itemId))
                         else
-                            Validated.invalidNel("ReadItem not present in the order! ${order}")
+                            Invalid(OrderError("Item ${c.itemId} not present in the order! ${order}", order))
         is ReadyOrder -> if (order.details.any { it.itemId ==c.itemId})
-                            Validated.validNel(ItemRemoved(c.phoneNum, c.itemId))
+                            Valid(ItemRemoved(c.phoneNum, c.itemId))
                         else
-                            Validated.invalidNel("ReadItem not present in the order! ${order}")
+                            Invalid(OrderError("Item ${c.itemId} not present in the order! ${order}", order))
     else ->
-        Validated.invalidNel("ReadOrder cannot be modified! ${order}")
+        Invalid(OrderError("Order cannot be modified! ${order}", order))
     }
 }
 
 private fun execute(c: AddAddress): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
-        is NewOrder -> Validated.validNel(AddressAdded(c.phoneNum, c.address))
+        is NewOrder -> Valid(AddressAdded(c.phoneNum, c.address))
     else ->
-        Validated.invalidNel("Address cannot be added! ${order}")
+        Invalid(OrderError("Address cannot be added! ${order}", order))
     }
 }
 
 private fun execute(c: Confirm): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
-        is ReadyOrder -> Validated.validNel(Confirmed(c.phoneNum))
+        is ReadyOrder -> Valid(Confirmed(c.phoneNum))
     else ->
-        Validated.invalidNel("ReadOrder is not ready for confirmation! ${order}")
+        Invalid(OrderError("Order is not ready for confirmation! ${order}", order))
     }
 }
 
 private fun execute(c: Cancel): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
-        is ReadyOrder -> Validated.validNel(Cancelled(c.phoneNum))
-        is NewOrder -> Validated.validNel(Cancelled(c.phoneNum))
+        is ReadyOrder -> Valid(Cancelled(c.phoneNum))
+        is NewOrder -> Valid(Cancelled(c.phoneNum))
     else ->
-        Validated.invalidNel("ReadOrder cannot be cancelled now! ${order}")
+        Invalid(OrderError("Order cannot be cancelled now! ${order}", order))
     }
 }
 
 private fun execute(c: Pay): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
-        is ConfirmedOrder -> Validated.validNel(Paid(c.phoneNum, c.price))
+        is ConfirmedOrder -> Valid(Paid(c.phoneNum, c.price))
     else ->
-        Validated.invalidNel("ReadOrder cannot be paid now! ${order}")
+        Invalid(OrderError("Order cannot be paid now! ${order}", order))
     }
 }
 
 private fun execute(c: Refuse): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
-        is ConfirmedOrder -> Validated.validNel(Refused(c.phoneNum, c.reason))
+        is ConfirmedOrder -> Valid(Refused(c.phoneNum, c.reason))
     else ->
-        Validated.invalidNel("ReadOrder cannot be refused now! ${order}")
+        Invalid(OrderError("Order cannot be refused now! ${order}", order))
     }
 }
 

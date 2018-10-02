@@ -4,6 +4,7 @@ import assertk.assert
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import com.gamasoft.anticapizzeria.functional.Valid
 import com.gamasoft.anticapizzeria.readModel.*
 import com.gamasoft.anticapizzeria.readModel.ReadItem
 import com.gamasoft.anticapizzeria.readModel.ReadOrder
@@ -51,9 +52,10 @@ internal class ApplicationTest {
 
             runBlocking {
                 val errors =r.await()
-                assert(errors.isValid)
+                assert(errors is Valid)
             }
 
+            Thread.sleep(10) //Query model eventual consistency
             val os = GetItem(id).process()
             assert(os).hasSize(1)
             assert((os[0] as ReadItem)).isEqualTo(ReadItem("pizza capricciosa", 7.5, true))
@@ -77,12 +79,14 @@ internal class ApplicationTest {
 
             assert(errors).isEmpty()
 
+            Thread.sleep(10) //Query model eventual consistency
+
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
             assert((os[0] as ReadOrder) ).isEqualTo(smallOrder(pn))
-
         }
     }
+
 
     @Test
     fun twoOrdersAtSameTime() {
@@ -104,6 +108,9 @@ internal class ApplicationTest {
             ).processAllInSync()
 
             assert(errors).isEmpty()
+
+            Thread.sleep(10) //Query model eventual consistency
+
             val oo = GetAllOpenOrders.process()
             assert(oo).hasSize(2)
             val ai = GetAllActiveItems.process()
@@ -141,6 +148,9 @@ internal class ApplicationTest {
 
             assert(errors).isEmpty()
 
+            Thread.sleep(10) //Query model eventual consistency
+
+
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
             assert((os[0] as ReadOrder).status ).isEqualTo(OrderStatus.refused)
@@ -161,6 +171,9 @@ internal class ApplicationTest {
                 ).processAllInSync()
 
             assert(errors).isEmpty()
+
+            Thread.sleep(10) //Query model eventual consistency
+
 
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
@@ -207,6 +220,9 @@ internal class ApplicationTest {
 
             assert(errors).isEmpty()
 
+            Thread.sleep(10) //Query model eventual consistency
+
+
             val ai = GetAllActiveItems.process()
             assert(ai).hasSize(1)
         }
@@ -251,7 +267,7 @@ internal class ApplicationTest {
                     Cancel(pn)).processAllInSync()
 
             assert(errors).hasSize(1)
-            assert(errors[0].head).isEqualTo("ReadOrder cannot be cancelled now! ConfirmedOrder(phoneNum=567, address=Oxford Circus, 4, details=[OrderDetail(itemId=MAR, qty=2)])")
+            assert(errors[0].msg).isEqualTo("Order cannot be cancelled now! ConfirmedOrder(phoneNum=567, address=Oxford Circus, 4, details=[OrderDetail(itemId=MAR, qty=2)])")
 
         }
     }
@@ -268,7 +284,7 @@ internal class ApplicationTest {
 
 
             assert(errors).hasSize(1)
-            assert(errors[0].head).isEqualTo("Cannot add non existing item! {MAR}")
+            assert(errors[0].msg).isEqualTo("Cannot add non existing item! MAR")
         }
     }
 
@@ -287,7 +303,7 @@ internal class ApplicationTest {
 
 
             assert(errors).hasSize(1)
-            assert(errors[0].head).isEqualTo("Cannot add disabled item! {DisabledItem(itemId=MAR, name=pizza margherita, price=6.0)}")
+            assert(errors[0].msg).isEqualTo("Cannot add disabled item! DisabledItem(itemId=MAR, name=pizza margherita, price=6.0)")
         }
     }
 

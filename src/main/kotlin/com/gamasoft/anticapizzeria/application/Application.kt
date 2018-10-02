@@ -1,16 +1,15 @@
 package com.gamasoft.anticapizzeria.application
 
-import arrow.data.Nel
-import arrow.data.Validated
 import com.gamasoft.anticapizzeria.eventStore.EventStoreInMemory
+import com.gamasoft.anticapizzeria.functional.Invalid
 import com.gamasoft.anticapizzeria.readModel.ReadEntity
 import com.gamasoft.anticapizzeria.readModel.Query
 import com.gamasoft.anticapizzeria.readModel.QueryHandler
 import com.gamasoft.anticapizzeria.writeModel.CmdResult
 import com.gamasoft.anticapizzeria.writeModel.Command
 import com.gamasoft.anticapizzeria.writeModel.CommandHandler
-import kotlinx.coroutines.experimental.CompletableDeferred
-import kotlinx.coroutines.experimental.runBlocking
+import com.gamasoft.anticapizzeria.writeModel.DomainError
+import kotlinx.coroutines.experimental.*
 
 
 class Application {
@@ -39,17 +38,23 @@ class Application {
     }
 
 
-    fun List<Command>.processAllInSync(): List<Nel<String>> {
+    fun List<Command>.processAllInSync(): List<DomainError> {
 
         val completed = runBlocking {
-             this@processAllInSync.map { it.process() }
-                    .map { it.await() }
+            this@processAllInSync.map { it.process().await() }
         }
 
 
-        return completed.filter { it.isInvalid }
-            .map { (it as Validated.Invalid).e }
+        return completed
+                .filterIsInstance<Invalid<DomainError>>()
+                .map { it.err }
     }
+
+
+    fun List<Command>.processAllAsync(): Deferred<List<CmdResult>> =
+        async {
+            this@processAllAsync.map { it.process() }.map { it.await() }
+        }
 
 }
 
