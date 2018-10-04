@@ -26,8 +26,19 @@ class Application {
 
     fun stop() {
         eventStore.saveAllEvents()
-
     }
+
+    fun List<Command>.processAllInSync(): List<DomainError> =
+        runBlocking {
+            this@processAllInSync.map { it.process().await() }
+                    .filterIsInstance<Invalid<DomainError>>()
+                    .map { it.err }
+        }
+
+    fun List<Command>.processAllAsync(): Deferred<List<CmdResult>> =
+        async {
+            this@processAllAsync.map { it.process() }.map { it.await() }
+        }
 
     fun Command.process(): CompletableDeferred<CmdResult> {
         return commandHandler.handle(this)
@@ -36,25 +47,6 @@ class Application {
     fun Query<out ReadEntity>.process(): List<ReadEntity> {
         return queryHandler.handle(this)
     }
-
-
-    fun List<Command>.processAllInSync(): List<DomainError> {
-
-        val completed = runBlocking {
-            this@processAllInSync.map { it.process().await() }
-        }
-
-
-        return completed
-                .filterIsInstance<Invalid<DomainError>>()
-                .map { it.err }
-    }
-
-
-    fun List<Command>.processAllAsync(): Deferred<List<CmdResult>> =
-        async {
-            this@processAllAsync.map { it.process() }.map { it.await() }
-        }
 
 }
 

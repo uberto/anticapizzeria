@@ -6,7 +6,6 @@ import com.gamasoft.anticapizzeria.functional.Invalid
 import com.gamasoft.anticapizzeria.functional.Valid
 import com.gamasoft.anticapizzeria.functional.Validated
 import kotlinx.coroutines.experimental.CompletableDeferred
-import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.runBlocking
 
 
@@ -23,7 +22,7 @@ class CommandHandler(val eventStore: EventStore) {
 
     private fun executeCommand(msg: CommandMsg) {
 
-        val res = executeMulti(msg.command)(eventStore)
+        val res = processPoly(msg.command)(eventStore)
 
         runBlocking {
             //we want to reply after sending the event to the store
@@ -34,7 +33,7 @@ class CommandHandler(val eventStore: EventStore) {
         }
     }
 
-    private fun executeMulti(c: Command): EsScope {
+    private fun processPoly(c: Command): EsScope {
 
         println("Processing ${c}")
 
