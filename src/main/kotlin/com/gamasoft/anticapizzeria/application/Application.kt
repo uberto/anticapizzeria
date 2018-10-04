@@ -14,10 +14,9 @@ import kotlinx.coroutines.experimental.*
 
 class Application {
 
-    val eventStore = EventStoreInMemory()
-
-    val commandHandler = CommandHandler(eventStore)
-    val queryHandler = QueryHandler()
+    private val eventStore = EventStoreInMemory()
+    private val commandHandler = CommandHandler(eventStore)
+    private val queryHandler = QueryHandler()
 
     fun start() {
         eventStore.addListener(queryHandler.eventChannel)

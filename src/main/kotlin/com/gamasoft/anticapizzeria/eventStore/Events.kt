@@ -22,7 +22,6 @@ data class Cancelled(val phoneNum: String): OrderEvent(phoneNum)
 data class Paid(val phoneNum: String, val totalPaid: Double): OrderEvent(phoneNum)
 data class Refused(val phoneNum: String, val reason: String): OrderEvent(phoneNum)
 
-
 data class ItemCreated(val itemId: String, val desc: String, val price: Double): ItemEvent(itemId)
 data class ItemDisabled(val itemId: String): ItemEvent(itemId)
 data class ItemEdited(val itemId: String, val desc: String, val price: Double): ItemEvent(itemId)
