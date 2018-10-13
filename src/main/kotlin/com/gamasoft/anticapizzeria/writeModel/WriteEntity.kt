@@ -43,6 +43,15 @@ data class ReadyOrder(val phoneNum: String, val address: String, val details: Li
 
 data class ConfirmedOrder(val phoneNum: String, val address: String, val details: List<OrderDetail>): Order(phoneNum) {
     override fun compose(e: OrderEvent) = when (e) {
+        is Dispatched -> DispatchedOrder(phoneNum, address, details, e.deliveryMan)
+        is Cancelled -> CancelledOrder(phoneNum)
+        else -> this
+    }
+}
+
+
+data class DispatchedOrder(val phoneNum: String, val address: String, val details: List<OrderDetail>, val deliveryMan: String): Order(phoneNum) {
+    override fun compose(e: OrderEvent) = when (e) {
         is Refused -> RefusedOrder(phoneNum, e.reason)
         is Paid -> PaidOrder(phoneNum, e.totalPaid)
         else -> this

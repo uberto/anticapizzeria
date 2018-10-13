@@ -1,7 +1,7 @@
 package com.gamasoft.anticapizzeria.readModel
 
 
-enum class OrderStatus {new, ready, confirmed, paid, cancelled, refused}
+enum class OrderStatus {new, ready, confirmed, dispatched, paid, cancelled, refused}
 
 data class OrderDetail(val itemName: String, val qty: Int): ReadEntity()
 

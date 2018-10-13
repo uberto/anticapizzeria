@@ -43,6 +43,7 @@ class CommandHandler(val eventStore: EventStore) {
             is RemoveItem -> execute(c)
             is AddAddress -> execute(c)
             is Confirm -> execute(c)
+            is Dispatch -> execute(c)
             is Cancel -> execute(c)
             is Pay -> execute(c)
             is Refuse -> execute(c)
@@ -53,7 +54,6 @@ class CommandHandler(val eventStore: EventStore) {
         }
         return cmdResult
     }
-
 
     fun handle(cmd: Command): CompletableDeferred<CmdResult> {
 
@@ -68,10 +68,11 @@ class CommandHandler(val eventStore: EventStore) {
 
 
 }
+
+
 private fun List<ItemEvent>.fold(): Item {
     return this.fold(emptyItem) { i: Item, e: ItemEvent -> i.compose(e)}
 }
-
 private fun List<OrderEvent>.fold(): Order {
     return this.fold(emptyOrder) { o: Order, e: OrderEvent -> o.compose(e)}
 }
@@ -108,9 +109,6 @@ private fun execute(c: EnableItem): EsScope = {
         Invalid(ItemError("Item already enabled! ${item}", item))
 }
 
-
-
-
 private fun execute(c: StartOrder): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     if (order == emptyOrder)
@@ -118,6 +116,8 @@ private fun execute(c: StartOrder): EsScope = {
     else
         Invalid(OrderError("Order already existing! ${order}", order))
 }
+
+
 
 
 private fun execute(c: AddItem): EsScope = {
@@ -138,6 +138,7 @@ private fun execute(c: AddItem): EsScope = {
     }
 }
 
+
 private fun execute(c: RemoveItem): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
@@ -152,6 +153,15 @@ private fun execute(c: RemoveItem): EsScope = {
     else ->
         Invalid(OrderError("Order cannot be modified! ${order}", order))
     }
+}
+
+private fun execute(c: Dispatch): EsScope = {
+    val order = getEvents<OrderEvent>(c.phoneNum).fold()
+    when (order){
+        is ConfirmedOrder -> Valid(Dispatched(c.phoneNum, c.deliveryMan))
+        else ->
+            Invalid(OrderError("Order cannot be dispatched! ${order}", order))
+        }
 }
 
 private fun execute(c: AddAddress): EsScope = {
@@ -185,7 +195,7 @@ private fun execute(c: Cancel): EsScope = {
 private fun execute(c: Pay): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
-        is ConfirmedOrder -> Valid(Paid(c.phoneNum, c.price))
+        is DispatchedOrder -> Valid(Paid(c.phoneNum, c.price))
     else ->
         Invalid(OrderError("Order cannot be paid now! ${order}", order))
     }
@@ -194,7 +204,7 @@ private fun execute(c: Pay): EsScope = {
 private fun execute(c: Refuse): EsScope = {
     val order = getEvents<OrderEvent>(c.phoneNum).fold()
     when (order){
-        is ConfirmedOrder -> Valid(Refused(c.phoneNum, c.reason))
+        is DispatchedOrder -> Valid(Refused(c.phoneNum, c.reason))
     else ->
         Invalid(OrderError("Order cannot be refused now! ${order}", order))
     }

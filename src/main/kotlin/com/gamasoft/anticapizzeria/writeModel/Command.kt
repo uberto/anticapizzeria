@@ -8,6 +8,7 @@ data class AddItem(val phoneNum: String, val itemId: String,
 data class RemoveItem(val phoneNum: String, val itemId: String): Command()
 data class AddAddress(val phoneNum: String, val address: String): Command()
 data class Confirm(val phoneNum: String): Command()
+data class Dispatch(val phoneNum: String, val deliveryMan: String): Command()
 data class Cancel(val phoneNum: String): Command()
 data class Pay(val phoneNum: String, val price: Double): Command()
 data class Refuse(val phoneNum: String, val reason: String): Command()

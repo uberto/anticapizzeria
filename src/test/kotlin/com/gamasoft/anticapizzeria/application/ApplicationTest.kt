@@ -75,6 +75,7 @@ internal class ApplicationTest {
                 AddItem(pn, "MAR", 2),
                 AddAddress(pn, "Oxford Circus, 4"),
                 Confirm(pn),
+                Dispatch(pn, "Joe"),
                 Pay(pn, 12.0)).processAllInSync()
 
             assert(errors).isEmpty()
@@ -144,6 +145,7 @@ internal class ApplicationTest {
                     AddItem(pn, "MAR", 2),
                     AddAddress(pn, "Oxford Circus, 4"),
                     Confirm(pn),
+                    Dispatch(pn, "Frank"),
                     Refuse(pn, "Pizza arrived cold")).processAllInSync()
 
             assert(errors).isEmpty()

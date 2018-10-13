@@ -61,6 +61,10 @@ class QueryHandler {
                     val order = orders.get(e.phoneNum)
                     order?.apply { status = OrderStatus.confirmed}
                 }
+                is Dispatched  ->  {
+                    val order = orders.get(e.phoneNum)
+                    order?.apply { status = OrderStatus.dispatched}
+                }
                 is Cancelled  ->  {
                     val order = orders.get(e.phoneNum)
                     order?.apply { status = OrderStatus.cancelled}
