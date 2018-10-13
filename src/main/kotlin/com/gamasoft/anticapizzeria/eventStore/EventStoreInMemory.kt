@@ -18,8 +18,8 @@ class EventStoreInMemory : EventStore() {
     private fun processEvents(event: Event) {
 
         when (event) {
-            is ItemEvent -> itemEventCache.compute(event.pk) { _, el -> (el ?: emptyList()).plus(event) }
-            is OrderEvent -> orderEventCache.compute(event.pk) { _, el -> (el ?: emptyList()).plus(event) }
+            is ItemEvent -> itemEventCache.compute(event.key()) { _, el -> (el ?: emptyList()).plus(event) }
+            is OrderEvent -> orderEventCache.compute(event.key()) { _, el -> (el ?: emptyList()).plus(event) }
         }
 
         for (listener in listeners) {

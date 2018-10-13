@@ -3,28 +3,37 @@ package com.gamasoft.anticapizzeria.eventStore
 import java.time.Instant
 
 
-sealed class Event(val pk: String) {
+sealed class Event() {
+    abstract fun key():String
+
     val created = Instant.now()
     val version = 0
 }
 
-sealed class OrderEvent(val key: String): Event(key)
+sealed class OrderEvent(): Event(){
+    abstract val phoneNum: String
+    override fun key(): String = phoneNum
+}
 
-sealed class ItemEvent(val key: String): Event(key)
+sealed class ItemEvent(): Event(){
+    abstract val itemId: String
+    override fun key(): String = itemId
+}
 
 
-data class Started(val phoneNum: String): OrderEvent(phoneNum)
-data class ItemAdded(val phoneNum: String, val itemId: String, val quantity: Int): OrderEvent(phoneNum)
-data class ItemRemoved(val phoneNum: String, val itemId: String): OrderEvent(phoneNum)
-data class AddressAdded(val phoneNum: String, val address: String): OrderEvent(phoneNum)
-data class Confirmed(val phoneNum: String): OrderEvent(phoneNum)
-data class Cancelled(val phoneNum: String): OrderEvent(phoneNum)
-data class Paid(val phoneNum: String, val totalPaid: Double): OrderEvent(phoneNum)
-data class Refused(val phoneNum: String, val reason: String): OrderEvent(phoneNum)
+data class Started(override val phoneNum: String): OrderEvent()
+data class ItemAdded(override val phoneNum: String, val itemId: String, val quantity: Int): OrderEvent()
+data class ItemRemoved(override val phoneNum: String, val itemId: String): OrderEvent()
+data class AddressAdded(override val phoneNum: String, val address: String): OrderEvent()
+data class Confirmed(override val phoneNum: String): OrderEvent()
+data class Dispatched(override val phoneNum: String, val deliveryMan:String): OrderEvent()
+data class Cancelled(override val phoneNum: String): OrderEvent()
+data class Paid(override val phoneNum: String, val totalPaid: Double): OrderEvent()
+data class Refused(override val phoneNum: String, val reason: String): OrderEvent()
 
-data class ItemCreated(val itemId: String, val desc: String, val price: Double): ItemEvent(itemId)
-data class ItemDisabled(val itemId: String): ItemEvent(itemId)
-data class ItemEdited(val itemId: String, val desc: String, val price: Double): ItemEvent(itemId)
-data class ItemEnabled(val itemId: String): ItemEvent(itemId)
+data class ItemCreated(override val itemId: String, val desc: String, val price: Double): ItemEvent()
+data class ItemDisabled(override val itemId: String): ItemEvent()
+data class ItemEdited(override val itemId: String, val desc: String, val price: Double): ItemEvent()
+data class ItemEnabled(override val itemId: String): ItemEvent()
 
 
