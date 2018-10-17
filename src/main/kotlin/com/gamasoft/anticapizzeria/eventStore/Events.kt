@@ -15,12 +15,6 @@ sealed class OrderEvent(): Event(){
     override fun key(): String = phoneNum
 }
 
-sealed class ItemEvent(): Event(){
-    abstract val itemId: String
-    override fun key(): String = itemId
-}
-
-
 data class Started(override val phoneNum: String): OrderEvent()
 data class ItemAdded(override val phoneNum: String, val itemId: String, val quantity: Int): OrderEvent()
 data class ItemRemoved(override val phoneNum: String, val itemId: String): OrderEvent()
@@ -29,6 +23,13 @@ data class Confirmed(override val phoneNum: String): OrderEvent()
 data class Cancelled(override val phoneNum: String): OrderEvent()
 data class Paid(override val phoneNum: String, val totalPaid: Double): OrderEvent()
 data class Refused(override val phoneNum: String, val reason: String): OrderEvent()
+
+
+sealed class ItemEvent(): Event(){
+    abstract val itemId: String
+    override fun key(): String = itemId
+}
+
 
 data class ItemCreated(override val itemId: String, val desc: String, val price: Double): ItemEvent()
 data class ItemDisabled(override val itemId: String): ItemEvent()

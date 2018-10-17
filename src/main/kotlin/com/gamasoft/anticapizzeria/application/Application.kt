@@ -43,7 +43,7 @@ class Application {
         return commandHandler.handle(this)
     }
 
-    fun Query<out ReadEntity>.process(): List<ReadEntity> {
+    fun Query.process(): List<ReadEntity> {
         return queryHandler.handle(this)
     }
 

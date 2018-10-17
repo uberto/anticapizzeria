@@ -34,11 +34,13 @@ class EventStoreInMemory : EventStore() {
     }
 
     fun saveAllEvents() {
+        //persist all events
         //not implemented
 
     }
 
     fun loadAllEvents() {
+        //load all events from persistence
         //not implemented
     }
 

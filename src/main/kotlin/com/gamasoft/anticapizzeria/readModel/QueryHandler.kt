@@ -5,7 +5,7 @@ import com.gamasoft.anticapizzeria.eventStore.*
 import kotlinx.coroutines.experimental.CompletableDeferred
 import kotlinx.coroutines.experimental.runBlocking
 
-data class QueryMsg(val query: Query<out ReadEntity>, val response: CompletableDeferred<List<ReadEntity>>) // a request with reply
+data class QueryMsg(val query: Query, val response: CompletableDeferred<List<ReadEntity>>) // a request with reply
 
 class QueryHandler {
 
@@ -78,7 +78,7 @@ class QueryHandler {
         }
     }
 
-    private fun processQuery(q: Query<out ReadEntity>): List<ReadEntity> {
+    private fun processQuery(q: Query): List<ReadEntity> {
         println("Processing $q")
 
         return when(q){
@@ -92,8 +92,7 @@ class QueryHandler {
 
 
 
-
-    fun handle(q: Query<out ReadEntity>):List<ReadEntity> {
+    fun handle(q: Query):List<ReadEntity> {
 
         val msg = QueryMsg(q, CompletableDeferred())
 

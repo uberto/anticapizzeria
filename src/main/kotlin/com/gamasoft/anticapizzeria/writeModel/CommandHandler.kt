@@ -55,19 +55,18 @@ class CommandHandler(val eventStore: EventStore) {
     }
 
 
-    fun handle(cmd: Command): CompletableDeferred<CmdResult> {
-
-        val msg = CommandMsg(cmd, CompletableDeferred())
-
-        runBlocking { //use launch to execute commands in parallel slightly out of order
-            sendChannel.send(msg)
-        }
-
-        return msg.response
-    }
-
+    fun handle(cmd: Command): CompletableDeferred<CmdResult> =
+            runBlocking {
+                //use launch to execute commands in parallel slightly out of order
+                CommandMsg(cmd, CompletableDeferred()).let {
+                    sendChannel.send(it)
+                    it.response
+                }
+            }
 
 }
+
+
 private fun List<ItemEvent>.fold(): Item {
     return this.fold(emptyItem) { i: Item, e: ItemEvent -> i.compose(e)}
 }
