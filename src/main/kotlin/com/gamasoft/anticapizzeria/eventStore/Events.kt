@@ -26,7 +26,6 @@ data class ItemAdded(override val phoneNum: String, val itemId: String, val quan
 data class ItemRemoved(override val phoneNum: String, val itemId: String): OrderEvent()
 data class AddressAdded(override val phoneNum: String, val address: String): OrderEvent()
 data class Confirmed(override val phoneNum: String): OrderEvent()
-data class Dispatched(override val phoneNum: String, val deliveryMan:String): OrderEvent()
 data class Cancelled(override val phoneNum: String): OrderEvent()
 data class Paid(override val phoneNum: String, val totalPaid: Double): OrderEvent()
 data class Refused(override val phoneNum: String, val reason: String): OrderEvent()
