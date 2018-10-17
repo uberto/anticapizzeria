@@ -6,8 +6,6 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import com.gamasoft.anticapizzeria.functional.Valid
 import com.gamasoft.anticapizzeria.readModel.*
-import com.gamasoft.anticapizzeria.readModel.ReadItem
-import com.gamasoft.anticapizzeria.readModel.ReadOrder
 import com.gamasoft.anticapizzeria.readModel.OrderDetail
 import com.gamasoft.anticapizzeria.writeModel.*
 import kotlinx.coroutines.experimental.runBlocking
@@ -19,14 +17,14 @@ internal class ApplicationTest {
     val application = Application()
 
     @BeforeEach
-    fun setUp(){
+    fun setUp() {
         application.start()
     }
 
     @Test
     fun newOrder() {
         val pn = "101"
-        application.apply{
+        application.apply {
             val r = StartOrder(pn).process()
 
             Thread.sleep(10) //async so we have to wait
@@ -34,7 +32,7 @@ internal class ApplicationTest {
             val os = GetOrder(pn).process()
 
             assert(os).hasSize(1)
-            assert((os[0] as ReadOrder) ).isEqualTo(ReadOrder(OrderStatus.new, pn, 0.0, null, mutableListOf()))
+            assert((os[0] as ReadOrder)).isEqualTo(ReadOrder(OrderStatus.new, pn, 0.0, null, mutableListOf()))
 
 
             val eos = GetOrder("***").process()
@@ -51,7 +49,7 @@ internal class ApplicationTest {
             val r = CreateItem(id, "pizza capricciosa", 7.5).process()
 
             runBlocking {
-                val errors =r.await()
+                val errors = r.await()
                 assert(errors is Valid)
             }
 
@@ -70,12 +68,12 @@ internal class ApplicationTest {
         val pn = "123"
         application.apply {
             val errors = listOf(
-                CreateItem("MAR", "pizza margherita", 6.0 ),
-                StartOrder(pn),
-                AddItem(pn, "MAR", 2),
-                AddAddress(pn, "Oxford Circus, 4"),
-                Confirm(pn),
-                Pay(pn, 12.0)).processAllInSync()
+                    CreateItem("MAR", "pizza margherita", 6.0),
+                    StartOrder(pn),
+                    AddItem(pn, "MAR", 2),
+                    AddAddress(pn, "Oxford Circus, 4"),
+                    Confirm(pn),
+                    Pay(pn, 12.0)).processAllInSync()
 
             assert(errors).isEmpty()
 
@@ -83,7 +81,7 @@ internal class ApplicationTest {
 
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
-            assert((os[0] as ReadOrder) ).isEqualTo(smallOrder(pn))
+            assert((os[0] as ReadOrder)).isEqualTo(smallOrder(pn))
         }
     }
 
@@ -139,7 +137,7 @@ internal class ApplicationTest {
         val pn = "123"
         application.apply {
             val errors = listOf(
-                    CreateItem("MAR", "pizza margherita", 6.0 ),
+                    CreateItem("MAR", "pizza margherita", 6.0),
                     StartOrder(pn),
                     AddItem(pn, "MAR", 2),
                     AddAddress(pn, "Oxford Circus, 4"),
@@ -153,22 +151,22 @@ internal class ApplicationTest {
 
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
-            assert((os[0] as ReadOrder).status ).isEqualTo(OrderStatus.refused)
+            assert((os[0] as ReadOrder).status).isEqualTo(OrderStatus.refused)
         }
     }
 
     @Test
-    fun changingPriceAfterConfirm(){
+    fun changingPriceAfterConfirm() {
         val pn = "123"
         application.apply {
             val errors = listOf(
-                CreateItem("CAL", "calzone", 6.0 ),
-                StartOrder(pn),
-                AddItem(pn, "CAL", 3),
-                AddAddress(pn, "Oxford Circus, 6"),
-                Confirm(pn),
-                EditItem("CAL", "calzone", 7.0 )
-                ).processAllInSync()
+                    CreateItem("CAL", "calzone", 6.0),
+                    StartOrder(pn),
+                    AddItem(pn, "CAL", 3),
+                    AddAddress(pn, "Oxford Circus, 6"),
+                    Confirm(pn),
+                    EditItem("CAL", "calzone", 7.0)
+            ).processAllInSync()
 
             assert(errors).isEmpty()
 
@@ -177,24 +175,24 @@ internal class ApplicationTest {
 
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
-            assert((os[0] as ReadOrder).total ).isEqualTo(18.0)
+            assert((os[0] as ReadOrder).total).isEqualTo(18.0)
 
             val il = GetItem("CAL").process()
             assert(il).hasSize(1)
-            assert((il[0] as ReadItem) ).isEqualTo(ReadItem("calzone", 7.0, true))
+            assert((il[0] as ReadItem)).isEqualTo(ReadItem("calzone", 7.0, true))
         }
     }
 
     @Test
-    fun cancelOrder(){
+    fun cancelOrder() {
         val pn = "567"
         application.apply {
             val errors = listOf(
-                CreateItem("MAR", "pizza margherita", 6.0 ),
-                StartOrder(pn),
-                AddItem(pn, "MAR", 2),
-                AddAddress(pn, "Oxford Circus, 4"),
-                Cancel(pn)).processAllInSync()
+                    CreateItem("MAR", "pizza margherita", 6.0),
+                    StartOrder(pn),
+                    AddItem(pn, "MAR", 2),
+                    AddAddress(pn, "Oxford Circus, 4"),
+                    Cancel(pn)).processAllInSync()
 
 
             assert(errors).isEmpty()
@@ -202,21 +200,21 @@ internal class ApplicationTest {
             assert(oo).hasSize(0)
             val os = GetOrder(pn).process()
             assert(os).hasSize(1)
-            assert((os[0] as ReadOrder).status ).isEqualTo(OrderStatus.cancelled)
+            assert((os[0] as ReadOrder).status).isEqualTo(OrderStatus.cancelled)
         }
     }
 
     @Test
-    fun disableAndReenableItems(){
+    fun disableAndReenableItems() {
         val itemId = "MAR"
         val itemId2 = "CAPRI"
         application.apply {
             val errors = listOf(
-                CreateItem(itemId, "pizza margherita", 6.0 ),
-                CreateItem(itemId2, "pizza capricciosa", 8.0 ),
-                DisableItem(itemId),
-                DisableItem(itemId2),
-                EnableItem(itemId)).processAllInSync()
+                    CreateItem(itemId, "pizza margherita", 6.0),
+                    CreateItem(itemId2, "pizza capricciosa", 8.0),
+                    DisableItem(itemId),
+                    DisableItem(itemId2),
+                    EnableItem(itemId)).processAllInSync()
 
             assert(errors).isEmpty()
 
@@ -230,14 +228,14 @@ internal class ApplicationTest {
 
 
     @Test
-    fun removeItems(){
+    fun removeItems() {
         val pn = "123"
         val itemId = "MAR"
         val itemId2 = "CAPRI"
         application.apply {
             val errors = listOf(
-                    CreateItem(itemId, "pizza margherita", 6.0 ),
-                    CreateItem(itemId2, "pizza capricciosa", 8.0 ),
+                    CreateItem(itemId, "pizza margherita", 6.0),
+                    CreateItem(itemId2, "pizza capricciosa", 8.0),
                     StartOrder(pn),
                     AddItem(pn, itemId, 2),
                     AddItem(pn, itemId2, 1),
@@ -259,7 +257,7 @@ internal class ApplicationTest {
         val pn = "567"
         application.apply {
             val errors = listOf(
-                    CreateItem("MAR", "pizza margherita", 6.0 ),
+                    CreateItem("MAR", "pizza margherita", 6.0),
                     StartOrder(pn),
                     AddItem(pn, "MAR", 2),
                     AddAddress(pn, "Oxford Circus, 4"),
@@ -295,7 +293,7 @@ internal class ApplicationTest {
         val itemId = "MAR"
         application.apply {
             val errors = listOf(
-                    CreateItem(itemId, "pizza margherita", 6.0 ),
+                    CreateItem(itemId, "pizza margherita", 6.0),
                     StartOrder(pn),
                     DisableItem(itemId),
                     AddItem(pn, itemId, 2)
@@ -307,8 +305,46 @@ internal class ApplicationTest {
         }
     }
 
-    private fun smallOrder(pn: String) = ReadOrder(OrderStatus.paid, pn, 12.0, "Oxford Circus, 4", mutableListOf(OrderDetail("pizza margherita", 2)))
 
+    @Test
+    fun fiftyOrders() {
+        createItems(5)
+
+        (1..50).map {
+            val pn = "7654${1000 + it}"
+            val errors = application.run {
+                val pizzaNo = it % 5
+                val qt = it % 7
+                val totToPay = (5.0 + pizzaNo) * qt
+                listOf(StartOrder(pn),
+                        AddItem(pn, "PIZZA_$pizzaNo", qt),
+                        AddAddress(pn, "Coronation Street, $it"),
+                        Confirm(pn),
+                        Pay(pn, totToPay)).processAllInSync() }
+
+            assert(errors).isEmpty()
+        }
+        Thread.sleep(10) //Query model eventual consistency
+
+        application.run {
+
+            val biggest = GetBiggestOrder.process()
+            assert(biggest).hasSize(1)
+            assert((biggest.first() as ReadOrder).total).isEqualTo(54.0)
+        }
+    }
+
+    private fun createItems(howMany: Int) {
+        val errors = application.run {
+            (0 until howMany).map {
+                CreateItem("PIZZA_$it", "pizza number $it", 5.0 + it)
+            }.processAllInSync()
+        }
+        assert(errors).isEmpty()
+    }
+
+
+    private fun smallOrder(pn: String) = ReadOrder(OrderStatus.paid, pn, 12.0, "Oxford Circus, 4", mutableListOf(OrderDetail("pizza margherita", 2)))
 
 
 }

@@ -10,6 +10,7 @@ import com.gamasoft.anticapizzeria.writeModel.Command
 import com.gamasoft.anticapizzeria.writeModel.CommandHandler
 import com.gamasoft.anticapizzeria.writeModel.DomainError
 import kotlinx.coroutines.experimental.*
+import java.lang.Thread.sleep
 
 
 class Application {
@@ -29,14 +30,17 @@ class Application {
 
     fun List<Command>.processAllInSync(): List<DomainError> =
         runBlocking {
-            this@processAllInSync.map { it.process().await() }
+            sleep(2)
+            map { it.process().await() }
                     .filterIsInstance<Invalid<DomainError>>()
                     .map { it.err }
+
+
         }
 
     fun List<Command>.processAllAsync(): Deferred<List<CmdResult>> =
         async {
-            this@processAllAsync.map { it.process() }.map { it.await() }
+            map { it.process() }.map { it.await() }
         }
 
     fun Command.process(): CompletableDeferred<CmdResult> {
