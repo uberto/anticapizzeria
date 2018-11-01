@@ -30,12 +30,12 @@ class Application {
 
     fun List<Command>.processAllInSync(): List<DomainError> =
         runBlocking {
-            sleep(2)
-            map { it.process().await() }
-                    .filterIsInstance<Invalid<DomainError>>()
-                    .map { it.err }
-
-
+            map {
+                it.process().await()
+                yield()
+            }
+            .filterIsInstance<Invalid<DomainError>>()
+            .map { it.err }
         }
 
     fun List<Command>.processAllAsync(): Deferred<List<CmdResult>> =
